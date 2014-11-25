@@ -154,7 +154,7 @@ public class UpdateWithRandomDatesAndUsersOp {
         if ((saveCounter % 10) == 0) {
             session.save();
             TransactionHelper.commitOrRollbackTransaction();
-            Thread.sleep(500);
+            Thread.sleep(1000);
             TransactionHelper.startTransaction(5000);
         }
     }
