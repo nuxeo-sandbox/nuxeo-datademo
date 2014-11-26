@@ -45,7 +45,7 @@ import org.nuxeo.runtime.transaction.TransactionHelper;
  * + 0-<code>modifDateUpTo</code> days.
  *
  */
-@Operation(id = UpdateWithRandomDatesAndUsersOp.ID, category = Constants.CAT_SERVICES, label = "Update Demo Data: With Random Dates and Users", description = "<code>docTypes</code> is a comma-separated list of doc types to handle. If <code>userCreat</code> is empty, no change is made to this field. <code>usersModif</code> is a comma-separated list of users (if empty, no change is made to this field). Creation date will be from today minus <code>createDateTodayFrom</code> to <code>createDateTodayTo</code> days. Modification date will be creation date + 0-<code>modifDateUpTo</code> days.")
+@Operation(id = UpdateWithRandomDatesAndUsersOp.ID, category = Constants.CAT_SERVICES, label = "Update Demo Data: With Random Dates and Users", description = "<code>docTypes</code> is a comma-separated list of doc types to handle. <code>users</code> is a comma-separated list of users used for creation-modif (if empty, no change is made to the fields). Creation date will be from today minus <code>createDateTodayFrom</code> to <code>createDateTodayTo</code> days. Modification date will be creation date + 0-<code>modifDateUpTo</code> days.")
 public class UpdateWithRandomDatesAndUsersOp {
 
     public static final String ID = "UpdateDemoData.WithRandomDatesAndUsers";
@@ -58,11 +58,8 @@ public class UpdateWithRandomDatesAndUsersOp {
     @Param(name = "docTypes", required = true)
     protected String docTypes = "";
 
-    @Param(name = "userCreat", required = false)
-    protected String userCreat = "";
-
-    @Param(name = "usersModif", required = false)
-    protected String usersModif = "";
+    @Param(name = "users", required = false)
+    protected String users = "";
 
     @Param(name = "createDateTodayFrom", required = false, values = { "0" })
     protected long createDateTodayFrom = 0;
@@ -87,15 +84,14 @@ public class UpdateWithRandomDatesAndUsersOp {
             docTypesArr[i] = "'" + docTypesArr[i].trim() + "'";
         }
 
-        String[] usersModifArr = usersModif.split(",");
-        for (int i = 0; i < usersModifArr.length; i++) {
-            usersModifArr[i] = usersModifArr[i].trim();
+        String[] usersArr = users.split(",");
+        for (int i = 0; i < usersArr.length; i++) {
+            usersArr[i] = usersArr[i].trim();
         }
-        int usersMacForRandom = usersModifArr.length - 1;
+        int usersMacForRandom = usersArr.length - 1;
 
         boolean hasDocTypes = docTypesArr.length > 0;
-        boolean hasUsers = usersModifArr.length > 0;
-        boolean hasCreator = userCreat != null && !userCreat.isEmpty();
+        boolean hasUsers = usersArr.length > 0;
 
         String nxql = "SELECT * FROM Document";
         if (hasDocTypes) {
@@ -117,14 +113,14 @@ public class UpdateWithRandomDatesAndUsersOp {
                             (int) createDateTodayTo) * -1);
             oneDoc.setPropertyValue("dc:created", creationDate);
 
-            if(hasCreator) {
-                oneDoc.setPropertyValue("dc:creator", userCreat);
+            if(hasUsers) {
+                oneDoc.setPropertyValue("dc:creator", usersArr[randomInt(0, usersMacForRandom)]);
             }
 
             modifDate = buildDate(creationDate, (int) modifDateUpTo);
             if (hasUsers) {
                 _updateModificationInfo(oneDoc,
-                        usersModifArr[randomInt(0, usersMacForRandom)], modifDate);
+                        usersArr[randomInt(0, usersMacForRandom)], modifDate);
             } else {
                 _updateModificationInfo(oneDoc, null, modifDate);
             }
