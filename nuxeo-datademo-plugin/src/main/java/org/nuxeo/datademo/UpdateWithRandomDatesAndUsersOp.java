@@ -96,7 +96,7 @@ public class UpdateWithRandomDatesAndUsersOp {
         String nxql = "SELECT * FROM Document";
         if (hasDocTypes) {
             nxql += " WHERE ecm:primaryType IN ("
-                    + String.join(",", docTypesArr) + ")";
+                    + org.apache.commons.lang.StringUtils.join(docTypesArr, ",") + ")";
         }
         DocumentModelList allDocs = session.query(nxql);
 

@@ -2,13 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
- <parent>
+  <parent>
     <groupId>org.nuxeo.datademo</groupId>
     <artifactId>nuxeo-datademo-parent</artifactId>
     <version>7.1-SNAPSHOT</version>
   </parent>
-
   <groupId>org.nuxeo.datademo</groupId>
   <artifactId>nuxeo-datademo-plugin</artifactId>
   <version>7.1-SNAPSHOT</version>
@@ -47,13 +45,21 @@
       <groupId>org.nuxeo.ecm.automation</groupId>
       <artifactId>nuxeo-automation-core</artifactId>
     </dependency>
-	<dependency>
+    <dependency>
       <groupId>org.nuxeo.ecm.platform</groupId>
       <artifactId>nuxeo-platform-dublincore</artifactId>
     </dependency>
     <dependency>
       <groupId>org.nuxeo.ecm.platform</groupId>
       <artifactId>nuxeo-platform-uidgen-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
     </dependency>
   </dependencies>
   <build>
