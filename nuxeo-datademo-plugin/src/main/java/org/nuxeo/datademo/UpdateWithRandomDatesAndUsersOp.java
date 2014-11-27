@@ -70,9 +70,13 @@ public class UpdateWithRandomDatesAndUsersOp {
     @Param(name = "modifDateUpTo", required = false, values = { "20" })
     protected long modifDateUpTo = 20;
 
+    @Param(name = "withLog", required = false, values = { "false" })
+    protected boolean withLog = false;
+
     protected int saveCounter = 0;
 
-    protected DateFormat _yyyyMMdd = new SimpleDateFormat("yyyy-MM-dd");
+    protected DateFormat _dateFormatForLog = new SimpleDateFormat(
+            "yyyy-MM-dd HH:mm:ss");
 
     protected Calendar _today = Calendar.getInstance();
 
@@ -96,13 +100,31 @@ public class UpdateWithRandomDatesAndUsersOp {
         String nxql = "SELECT * FROM Document";
         if (hasDocTypes) {
             nxql += " WHERE ecm:primaryType IN ("
-                    + org.apache.commons.lang.StringUtils.join(docTypesArr, ",") + ")";
+                    + org.apache.commons.lang.StringUtils.join(docTypesArr, ",")
+                    + ")";
         }
         DocumentModelList allDocs = session.query(nxql);
 
         saveCounter = 0;
         String logSuffix = " / " + allDocs.size();
         for (DocumentModel oneDoc : allDocs) {
+
+            String prevInfo = null;
+            if (withLog) {
+                prevInfo = ""
+                        + (saveCounter + 1)
+                        + logSuffix
+                        + ", "
+                        + oneDoc.getId()
+                        + "\nBefore: "
+                        + oneDoc.getPropertyValue("dc:creator")
+                        + " - "
+                        + formatDateForLog((Calendar) oneDoc.getPropertyValue("dc:created"))
+                        + " - "
+                        + oneDoc.getPropertyValue("dc:lastContributor")
+                        + " - "
+                        + formatDateForLog((Calendar) oneDoc.getPropertyValue("dc:modified"));
+            }
 
             Calendar creationDate, modifDate;
 
@@ -113,8 +135,9 @@ public class UpdateWithRandomDatesAndUsersOp {
                             (int) createDateTodayTo) * -1);
             oneDoc.setPropertyValue("dc:created", creationDate);
 
-            if(hasUsers) {
-                oneDoc.setPropertyValue("dc:creator", usersArr[randomInt(0, usersMacForRandom)]);
+            if (hasUsers) {
+                oneDoc.setPropertyValue("dc:creator",
+                        usersArr[randomInt(0, usersMacForRandom)]);
             }
 
             modifDate = buildDate(creationDate, (int) modifDateUpTo);
@@ -129,11 +152,25 @@ public class UpdateWithRandomDatesAndUsersOp {
                     DublinCoreListener.DISABLE_DUBLINCORE_LISTENER, true);
             doSaveDoc(oneDoc);
 
-            log.warn("Modifed doc #" + saveCounter + logSuffix);
-
+            if (withLog) {
+                prevInfo += "\nAfter: "
+                        + oneDoc.getPropertyValue("dc:creator")
+                        + " - "
+                        + formatDateForLog((Calendar) oneDoc.getPropertyValue("dc:created"))
+                        + " - "
+                        + oneDoc.getPropertyValue("dc:lastContributor")
+                        + " - "
+                        + formatDateForLog((Calendar) oneDoc.getPropertyValue("dc:modified"));
+                log.warn(prevInfo);
+            }
         }
 
         session.save();
+    }
+
+    protected String formatDateForLog(Calendar inDate) {
+
+        return _dateFormatForLog.format(inDate.getTime());
     }
 
     protected int randomInt(int inMin, int inMax) {
@@ -157,9 +194,7 @@ public class UpdateWithRandomDatesAndUsersOp {
 
         saveCounter += 1;
         if ((saveCounter % 10) == 0) {
-            session.save();
             TransactionHelper.commitOrRollbackTransaction();
-            Thread.sleep(1000);
             TransactionHelper.startTransaction(5000);
         }
     }
