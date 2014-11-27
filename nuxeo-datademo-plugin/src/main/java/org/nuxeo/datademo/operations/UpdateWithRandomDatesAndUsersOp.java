@@ -15,7 +15,7 @@
  *     thibaud
  */
 
-package org.nuxeo.datademo;
+package org.nuxeo.datademo.operations;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
