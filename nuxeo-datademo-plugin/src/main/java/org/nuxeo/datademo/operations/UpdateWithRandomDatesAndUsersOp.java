@@ -130,11 +130,8 @@ public class UpdateWithRandomDatesAndUsersOp {
 
             Calendar creationDate, modifDate;
 
-            creationDate = (Calendar) _today.clone();
-            creationDate.add(
-                    Calendar.DATE,
-                    ToolsMisc.randomInt((int) createDateTodayFrom,
-                            (int) createDateTodayTo) * -1);
+            creationDate = RandomDates.buildDate(null,
+                    (int) createDateTodayFrom, (int) createDateTodayTo, true);
             oneDoc.setPropertyValue("dc:created", creationDate);
 
             if (hasUsers) {
@@ -142,7 +139,8 @@ public class UpdateWithRandomDatesAndUsersOp {
                         usersArr[ToolsMisc.randomInt(0, usersMacForRandom)]);
             }
 
-            modifDate = RandomDates.addDays(creationDate, (int) modifDateUpTo, true);
+            modifDate = RandomDates.addDays(creationDate, (int) modifDateUpTo,
+                    true);
             if (hasUsers) {
                 _updateModificationInfo(oneDoc,
                         usersArr[ToolsMisc.randomInt(0, usersMacForRandom)],
