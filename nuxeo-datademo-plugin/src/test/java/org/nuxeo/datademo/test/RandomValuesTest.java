@@ -19,9 +19,13 @@ package org.nuxeo.datademo.test;
 
 import static org.junit.Assert.*;
 
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.datademo.RandomCompanyName;
+import org.nuxeo.datademo.RandomDates;
 import org.nuxeo.datademo.RandomFirstLastNames;
 import org.nuxeo.datademo.RandomFirstLastNames.GENDER;
 import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
@@ -34,17 +38,16 @@ import org.nuxeo.runtime.test.runner.FeaturesRunner;
 
 import com.google.inject.Inject;
 
-
-
 @RunWith(FeaturesRunner.class)
 @Features({ PlatformFeature.class, CoreFeature.class,
         EmbeddedAutomationServerFeature.class })
 @Deploy({ "nuxeo-datademo" })
-public class DataDemoTest {
+public class RandomValuesTest {
+
+    public static long MS_IN_DAY = 24 * 3600000;
 
     @Inject
     CoreSession coreSession;
-
 
     @Test
     public void testFirstLastName() throws Exception {
@@ -90,7 +93,8 @@ public class DataDemoTest {
         assertNotNull(value);
         assertTrue(!value.isEmpty());
 
-        // Say thread using r1 calls release() => the singleton is not really released
+        // Say thread using r1 calls release() => the singleton is not really
+        // released
         RandomFirstLastNames.release();
         assertEquals(2, RandomFirstLastNames.getUsageCount());
         // "Thread" 2 can get a value
@@ -104,7 +108,8 @@ public class DataDemoTest {
         // "Thread" 3 can get a value
         value = r3.getAFirstName(GENDER.FEMALE);
         assertNotNull(value);
-        assertTrue(!value.isEmpty());RandomFirstLastNames.release();
+        assertTrue(!value.isEmpty());
+        RandomFirstLastNames.release();
 
         // "Thread" 3 calls release()
         RandomFirstLastNames.release();
@@ -130,8 +135,55 @@ public class DataDemoTest {
         assertEquals(1, value.split(" ").length);
 
         value = rcn.getAName(2);
-        assertEquals(2, value.split(" ").length);
+        assertEquals(value, 2, value.split(" ").length);
 
         RandomCompanyName.release();
+    }
+
+    protected boolean sameYMD(GregorianCalendar inD1,
+            GregorianCalendar inD2) {
+
+        return inD1.get(Calendar.YEAR) == inD2.get(Calendar.YEAR)
+                && inD1.get(Calendar.MONTH) == inD2.get(Calendar.MONTH)
+                && inD1.get(Calendar.DATE) == inD2.get(Calendar.DATE);
+    }
+
+    protected boolean d2IsInNDays(GregorianCalendar  inD1, GregorianCalendar inD2, int inDays) {
+
+        return ((inD2.getTimeInMillis() - inD1.getTimeInMillis()) / MS_IN_DAY) == inDays;
+
+    }
+
+    /*
+     * WARNING: Even if test runs fast, maybe that exactly around midnight,
+     * Comparison with "today and now" may fail.
+     *
+     * You have been warned.
+     */
+    @Test
+    public void testRandomDates() throws Exception {
+
+        Calendar d;
+        long diff;
+        Calendar now = Calendar.getInstance();
+
+        d = RandomDates.addDays(now, 3);
+        assertTrue(d2IsInNDays((GregorianCalendar) now,
+                (GregorianCalendar) d, 3));
+
+        // maxIsToday true and + 3 days => should stays to today
+        d = RandomDates.addDays(now, 3, true);
+        assertTrue(sameYMD((GregorianCalendar) now,
+                (GregorianCalendar) d));
+
+        d = RandomDates.buildDate(null, 10, 90, true);
+        diff = now.getTimeInMillis() - d.getTimeInMillis();
+        assertTrue( diff >= (10 * MS_IN_DAY));
+        assertTrue( diff <= (90 * MS_IN_DAY));
+
+        d = RandomDates.buildDate(null, 10, 90, false);
+        diff = d.getTimeInMillis() - now.getTimeInMillis();
+        assertTrue( diff >= (10 * MS_IN_DAY));
+        assertTrue( diff <= (90 * MS_IN_DAY));
     }
 }

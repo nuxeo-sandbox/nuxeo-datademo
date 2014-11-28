@@ -56,6 +56,23 @@ public class RandomDates {
     }
 
     /**
+     * Wrapper for the main method
+     * <code>addDays(Calendar inDate, int inDays, boolean inMaxIsToday)</code>,
+     * setting <code>inMaxIsToday</code> to <code>false</false>
+     *
+     * @param inDate
+     * @param inDays
+     * @return
+     *
+     * @since TODO
+     */
+    public static Calendar addDays(Calendar inDate, int inDays) {
+
+        return addDays(inDate, inDays, false);
+
+    }
+
+    /**
      * Return a Calendar date equals to <code>inDate</code> +/-
      * <code>inDays</code>. If <code>inMaxIsToday</inMaxIsToday>
      * is true and <code>inDays</code> is positive, then "today" will be applied
