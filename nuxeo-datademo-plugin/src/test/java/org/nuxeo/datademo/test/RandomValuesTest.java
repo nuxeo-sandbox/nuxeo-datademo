@@ -140,15 +140,15 @@ public class RandomValuesTest {
         RandomCompanyName.release();
     }
 
-    protected boolean sameYMD(GregorianCalendar inD1,
-            GregorianCalendar inD2) {
+    protected boolean sameYMD(GregorianCalendar inD1, GregorianCalendar inD2) {
 
         return inD1.get(Calendar.YEAR) == inD2.get(Calendar.YEAR)
                 && inD1.get(Calendar.MONTH) == inD2.get(Calendar.MONTH)
                 && inD1.get(Calendar.DATE) == inD2.get(Calendar.DATE);
     }
 
-    protected boolean d2IsInNDays(GregorianCalendar  inD1, GregorianCalendar inD2, int inDays) {
+    protected boolean d2IsInNDays(GregorianCalendar inD1,
+            GregorianCalendar inD2, int inDays) {
 
         return ((inD2.getTimeInMillis() - inD1.getTimeInMillis()) / MS_IN_DAY) == inDays;
 
@@ -168,22 +168,38 @@ public class RandomValuesTest {
         Calendar now = Calendar.getInstance();
 
         d = RandomDates.addDays(now, 3);
-        assertTrue(d2IsInNDays((GregorianCalendar) now,
-                (GregorianCalendar) d, 3));
+        assertTrue(d2IsInNDays((GregorianCalendar) now, (GregorianCalendar) d,
+                3));
 
         // maxIsToday true and + 3 days => should stays to today
         d = RandomDates.addDays(now, 3, true);
-        assertTrue(sameYMD((GregorianCalendar) now,
-                (GregorianCalendar) d));
+        assertTrue(sameYMD((GregorianCalendar) now, (GregorianCalendar) d));
 
         d = RandomDates.buildDate(null, 10, 90, true);
         diff = now.getTimeInMillis() - d.getTimeInMillis();
-        assertTrue( diff >= (10 * MS_IN_DAY));
-        assertTrue( diff <= (90 * MS_IN_DAY));
+        assertTrue(diff >= (10 * MS_IN_DAY));
+        assertTrue(diff <= (90 * MS_IN_DAY));
 
         d = RandomDates.buildDate(null, 10, 90, false);
         diff = d.getTimeInMillis() - now.getTimeInMillis();
-        assertTrue( diff >= (10 * MS_IN_DAY));
-        assertTrue( diff <= (90 * MS_IN_DAY));
+        assertTrue(diff >= (10 * MS_IN_DAY));
+        assertTrue(diff <= (90 * MS_IN_DAY));
+    }
+
+    @Test
+    public void toto() throws Exception {
+        String[] users = { "Administrator", "jim", "john", "kate", "alan",
+                "rob", "julie" };
+
+        /*
+         * // All the users in users
+         * RandomDublincoreContributors.setContributors(null, users);
+         *
+         * // Exactly 3 users RandomDublincoreContributors.setContributors(null,
+         * users, 3);
+         *
+         * // Between 3 and 5 users
+         * RandomDublincoreContributors.setContributors(null, users, 3, 5);
+         */
     }
 }

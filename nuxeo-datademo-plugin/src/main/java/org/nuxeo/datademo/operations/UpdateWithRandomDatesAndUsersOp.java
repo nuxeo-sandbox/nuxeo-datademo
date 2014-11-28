@@ -27,6 +27,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.datademo.RandomDates;
+import org.nuxeo.datademo.RandomDublincoreContributors;
 import org.nuxeo.datademo.ToolsMisc;
 import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Context;
@@ -94,7 +95,7 @@ public class UpdateWithRandomDatesAndUsersOp {
         for (int i = 0; i < usersArr.length; i++) {
             usersArr[i] = usersArr[i].trim();
         }
-        int usersMacForRandom = usersArr.length - 1;
+        int usersMaxForRandom = usersArr.length - 1;
 
         boolean hasDocTypes = docTypesArr.length > 0;
         boolean hasUsers = usersArr.length > 0;
@@ -136,17 +137,15 @@ public class UpdateWithRandomDatesAndUsersOp {
 
             if (hasUsers) {
                 oneDoc.setPropertyValue("dc:creator",
-                        usersArr[ToolsMisc.randomInt(0, usersMacForRandom)]);
+                        usersArr[ToolsMisc.randomInt(0, usersMaxForRandom)]);
             }
 
             modifDate = RandomDates.addDays(creationDate, (int) modifDateUpTo,
                     true);
+            oneDoc.setPropertyValue("dc:modified", modifDate);
             if (hasUsers) {
-                _updateModificationInfo(oneDoc,
-                        usersArr[ToolsMisc.randomInt(0, usersMacForRandom)],
-                        modifDate);
-            } else {
-                _updateModificationInfo(oneDoc, null, modifDate);
+                oneDoc = RandomDublincoreContributors.addContributor(oneDoc,
+                        usersArr);
             }
 
             oneDoc.putContextData(

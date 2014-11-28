@@ -147,8 +147,8 @@ public class RandomDates {
         return result;
     }
 
-    public static Calendar[] buildDates(int inCount, Calendar inFrom, int inDaysFrom,
-            int inDaysTo, boolean inRewind) {
+    public static Calendar[] buildDates(int inCount, Calendar inFrom,
+            int inDaysFrom, int inDaysTo, boolean inRewind) {
 
         Calendar[] dates = new Calendar[inCount];
 
@@ -161,7 +161,7 @@ public class RandomDates {
             }
         }
 
-        for(int i = 0; i < inCount; i++) {
+        for (int i = 0; i < inCount; i++) {
             dates[i] = buildDate(from, inDaysFrom, inDaysTo, inRewind);
         }
 
@@ -174,7 +174,7 @@ public class RandomDates {
         Calendar[] dates = new Calendar[inFrom.length];
 
         int max = inFrom.length;
-        for(int i = 0; i < max; i++) {
+        for (int i = 0; i < max; i++) {
             dates[i] = buildDate(inFrom[i], inDaysFrom, inDaysTo, inRewind);
         }
 
