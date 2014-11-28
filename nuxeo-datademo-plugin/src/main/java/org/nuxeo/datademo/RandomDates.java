@@ -147,4 +147,38 @@ public class RandomDates {
         return result;
     }
 
+    public static Calendar[] buildDates(int inCount, Calendar inFrom, int inDaysFrom,
+            int inDaysTo, boolean inRewind) {
+
+        Calendar[] dates = new Calendar[inCount];
+
+        Calendar from = inFrom;
+        if (inFrom == null) {
+            if (useStaticToday) {
+                inFrom = (Calendar) today.clone();
+            } else {
+                inFrom = Calendar.getInstance();
+            }
+        }
+
+        for(int i = 0; i < inCount; i++) {
+            dates[i] = buildDate(from, inDaysFrom, inDaysTo, inRewind);
+        }
+
+        return dates;
+    }
+
+    public static Calendar[] buildDates(Calendar[] inFrom, int inDaysFrom,
+            int inDaysTo, boolean inRewind) {
+
+        Calendar[] dates = new Calendar[inFrom.length];
+
+        int max = inFrom.length;
+        for(int i = 0; i < max; i++) {
+            dates[i] = buildDate(inFrom[i], inDaysFrom, inDaysTo, inRewind);
+        }
+
+        return dates;
+    }
+
 }
