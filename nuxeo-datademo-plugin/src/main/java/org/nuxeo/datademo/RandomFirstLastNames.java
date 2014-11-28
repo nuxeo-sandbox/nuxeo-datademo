@@ -144,14 +144,14 @@ public class RandomFirstLastNames {
 
         switch (inKind) {
         case MALE:
-            return firstNamesMale.get(MiscUtils.randomInt(0, fnMaleMaxForRandom));
+            return firstNamesMale.get(ToolsMisc.randomInt(0, fnMaleMaxForRandom));
 
         case FEMALE:
-            return firstNamesFemale.get(MiscUtils.randomInt(0,
+            return firstNamesFemale.get(ToolsMisc.randomInt(0,
                     fnFemaleMaxForRandom));
 
         default:
-            if (MiscUtils.randomInt(0, 1) == 0) {
+            if (ToolsMisc.randomInt(0, 1) == 0) {
                 return getFirstName(GENDER.MALE);
             } else {
                 return getFirstName(GENDER.FEMALE);
@@ -160,6 +160,6 @@ public class RandomFirstLastNames {
     }
 
     public String getLastName() {
-        return lastNames.get(MiscUtils.randomInt(0, lnMaxForRandom));
+        return lastNames.get(ToolsMisc.randomInt(0, lnMaxForRandom));
     }
 }

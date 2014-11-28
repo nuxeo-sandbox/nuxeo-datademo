@@ -21,7 +21,7 @@ package org.nuxeo.datademo;
  *
  * @since 7.1
  */
-public class MiscUtils {
+public class ToolsMisc {
 
     public static int randomInt(int inMin, int inMax) {
         return inMin + (int) (Math.random() * ((inMax - inMin) + 1));
