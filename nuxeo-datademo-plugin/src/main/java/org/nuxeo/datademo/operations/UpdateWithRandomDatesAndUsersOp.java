@@ -176,17 +176,6 @@ public class UpdateWithRandomDatesAndUsersOp {
         return _dateFormatForLog.format(inDate.getTime());
     }
 
-    protected Calendar buildDateOUOUO(Calendar inDate, int inDays) {
-        Calendar d = (Calendar) inDate.clone();
-
-        d.add(Calendar.DATE, inDays);
-        if (d.after(_today)) {
-            d = (Calendar) _today.clone();
-        }
-
-        return d;
-    }
-
     protected void doSaveDoc(DocumentModel inDoc) throws InterruptedException {
         session.saveDocument(inDoc);
 
