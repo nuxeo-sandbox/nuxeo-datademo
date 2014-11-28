@@ -140,7 +140,7 @@ public class RandomFirstLastNames {
         return usageCount;
     }
 
-    public String getFirstName(GENDER inKind) {
+    public String getAFirstName(GENDER inKind) {
 
         switch (inKind) {
         case MALE:
@@ -152,14 +152,14 @@ public class RandomFirstLastNames {
 
         default:
             if (ToolsMisc.randomInt(0, 1) == 0) {
-                return getFirstName(GENDER.MALE);
+                return getAFirstName(GENDER.MALE);
             } else {
-                return getFirstName(GENDER.FEMALE);
+                return getAFirstName(GENDER.FEMALE);
             }
         }
     }
 
-    public String getLastName() {
+    public String getALastName() {
         return lastNames.get(ToolsMisc.randomInt(0, lnMaxForRandom));
     }
 }

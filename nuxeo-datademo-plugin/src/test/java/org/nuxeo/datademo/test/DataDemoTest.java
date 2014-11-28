@@ -21,6 +21,7 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.nuxeo.datademo.RandomCompanyName;
 import org.nuxeo.datademo.RandomFirstLastNames;
 import org.nuxeo.datademo.RandomFirstLastNames.GENDER;
 import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
@@ -48,23 +49,23 @@ public class DataDemoTest {
     @Test
     public void testFirstLastName() throws Exception {
 
-        RandomFirstLastNames r;
+        RandomFirstLastNames rfln;
 
-        r = RandomFirstLastNames.getInstance();
+        rfln = RandomFirstLastNames.getInstance();
 
-        String value = r.getFirstName(GENDER.MALE);
+        String value = rfln.getAFirstName(GENDER.MALE);
         assertNotNull(value);
         assertTrue(!value.isEmpty());
 
-        value = r.getFirstName(GENDER.FEMALE);
+        value = rfln.getAFirstName(GENDER.FEMALE);
         assertNotNull(value);
         assertTrue(!value.isEmpty());
 
-        value = r.getFirstName(GENDER.ANY);
+        value = rfln.getAFirstName(GENDER.ANY);
         assertNotNull(value);
         assertTrue(!value.isEmpty());
 
-        value = r.getLastName();
+        value = rfln.getALastName();
         assertNotNull(value);
         assertTrue(!value.isEmpty());
 
@@ -85,7 +86,7 @@ public class DataDemoTest {
         assertEquals(3, RandomFirstLastNames.getUsageCount());
 
         // Get a value
-        String value = r1.getFirstName(GENDER.MALE);
+        String value = r1.getAFirstName(GENDER.MALE);
         assertNotNull(value);
         assertTrue(!value.isEmpty());
 
@@ -93,7 +94,7 @@ public class DataDemoTest {
         RandomFirstLastNames.release();
         assertEquals(2, RandomFirstLastNames.getUsageCount());
         // "Thread" 2 can get a value
-        value = r2.getLastName();
+        value = r2.getALastName();
         assertNotNull(value);
         assertTrue(!value.isEmpty());
 
@@ -101,7 +102,7 @@ public class DataDemoTest {
         RandomFirstLastNames.release();
         assertEquals(1, RandomFirstLastNames.getUsageCount());
         // "Thread" 3 can get a value
-        value = r3.getFirstName(GENDER.FEMALE);
+        value = r3.getAFirstName(GENDER.FEMALE);
         assertNotNull(value);
         assertTrue(!value.isEmpty());RandomFirstLastNames.release();
 
@@ -111,10 +112,26 @@ public class DataDemoTest {
 
         // Now, we must have an error
         try {
-            value = r3.getLastName();
+            value = r3.getALastName();
         } catch (Exception e) {
             assertEquals("NullPointerException", e.getClass().getSimpleName());
         }
+    }
 
+    @Test
+    public void testCompanyName() throws Exception {
+
+        RandomCompanyName rcn = RandomCompanyName.getInstance();
+
+        String value = rcn.getAName(0);
+        assertEquals(3, value.split(" ").length);
+
+        value = rcn.getAName(1);
+        assertEquals(1, value.split(" ").length);
+
+        value = rcn.getAName(2);
+        assertEquals(2, value.split(" ").length);
+
+        RandomCompanyName.release();
     }
 }
