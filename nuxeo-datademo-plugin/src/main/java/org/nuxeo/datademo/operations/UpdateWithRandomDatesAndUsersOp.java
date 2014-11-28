@@ -26,6 +26,8 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.nuxeo.datademo.RandomDates;
+import org.nuxeo.datademo.ToolsMisc;
 import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Context;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
@@ -131,19 +133,20 @@ public class UpdateWithRandomDatesAndUsersOp {
             creationDate = (Calendar) _today.clone();
             creationDate.add(
                     Calendar.DATE,
-                    randomInt((int) createDateTodayFrom,
+                    ToolsMisc.randomInt((int) createDateTodayFrom,
                             (int) createDateTodayTo) * -1);
             oneDoc.setPropertyValue("dc:created", creationDate);
 
             if (hasUsers) {
                 oneDoc.setPropertyValue("dc:creator",
-                        usersArr[randomInt(0, usersMacForRandom)]);
+                        usersArr[ToolsMisc.randomInt(0, usersMacForRandom)]);
             }
 
-            modifDate = buildDate(creationDate, (int) modifDateUpTo);
+            modifDate = RandomDates.addDays(creationDate, (int) modifDateUpTo, true);
             if (hasUsers) {
                 _updateModificationInfo(oneDoc,
-                        usersArr[randomInt(0, usersMacForRandom)], modifDate);
+                        usersArr[ToolsMisc.randomInt(0, usersMacForRandom)],
+                        modifDate);
             } else {
                 _updateModificationInfo(oneDoc, null, modifDate);
             }
@@ -173,12 +176,7 @@ public class UpdateWithRandomDatesAndUsersOp {
         return _dateFormatForLog.format(inDate.getTime());
     }
 
-    protected int randomInt(int inMin, int inMax) {
-        // No error check here
-        return inMin + (int) (Math.random() * ((inMax - inMin) + 1));
-    }
-
-    protected Calendar buildDate(Calendar inDate, int inDays) {
+    protected Calendar buildDateOUOUO(Calendar inDate, int inDays) {
         Calendar d = (Calendar) inDate.clone();
 
         d.add(Calendar.DATE, inDays);
