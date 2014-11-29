@@ -187,7 +187,7 @@ public class RandomValuesTest {
     }
 
     @Test
-    public void toto() throws Exception {
+    public void testRandomDublincore() throws Exception {
         String[] users = { "Administrator", "jim", "john", "kate", "alan",
                 "rob", "julie" };
 
@@ -201,5 +201,14 @@ public class RandomValuesTest {
          * // Between 3 and 5 users
          * RandomDublincoreContributors.setContributors(null, users, 3, 5);
          */
+    }
+
+    @Test
+    public void testLifecycle() throws Exception {
+
+        String [] lcs = {"project", "validation", "approved"};
+        String [] lct = {"to_validation", "to_approved"};
+
+
     }
 }
