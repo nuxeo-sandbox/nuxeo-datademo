@@ -22,6 +22,8 @@ import static org.junit.Assert.*;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.datademo.RandomCompanyName;
@@ -30,6 +32,7 @@ import org.nuxeo.datademo.RandomFirstLastNames;
 import org.nuxeo.datademo.RandomFirstLastNames.GENDER;
 import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
+import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.test.CoreFeature;
 import org.nuxeo.ecm.platform.test.PlatformFeature;
 import org.nuxeo.runtime.test.runner.Deploy;
@@ -46,11 +49,51 @@ public class RandomValuesTest {
 
     public static long MS_IN_DAY = 24 * 3600000;
 
+    protected DocumentModel parentOfTestDocs;
+
     @Inject
     CoreSession coreSession;
 
+    protected void doLog(String what) {
+        System.out.println(what);
+    }
+
+    // Not sure it's the best way to get the current method name, but at least
+    // it works
+    protected String getCurrentMethodName(RuntimeException e) {
+        StackTraceElement currentElement = e.getStackTrace()[0];
+        return currentElement.getMethodName();
+    }
+
+    protected DocumentModel createDocument(String inType, String inTitle) {
+
+        DocumentModel doc = coreSession.createDocumentModel(
+                parentOfTestDocs.getPathAsString(), inType, inType);
+        doc.setPropertyValue("dc:title", inTitle);
+        return coreSession.createDocument(doc);
+
+    }
+
+    @Before
+    public void setUp() {
+
+        parentOfTestDocs = coreSession.createDocumentModel("/",
+                "test-pictures", "Folder");
+        parentOfTestDocs.setPropertyValue("dc:title", "test-pictures");
+        parentOfTestDocs = coreSession.createDocument(parentOfTestDocs);
+        parentOfTestDocs = coreSession.saveDocument(parentOfTestDocs);
+    }
+
+    @After
+    public void cleanup() {
+        coreSession.removeDocument(parentOfTestDocs.getRef());
+        coreSession.save();
+    }
+
     @Test
     public void testFirstLastName() throws Exception {
+
+        doLog(getCurrentMethodName(new RuntimeException()) + "...");
 
         RandomFirstLastNames rfln;
 
@@ -78,6 +121,8 @@ public class RandomValuesTest {
 
     @Test
     public void testFirstLastNameSingleton() throws Exception {
+
+        doLog(getCurrentMethodName(new RuntimeException()) + "...");
 
         RandomFirstLastNames r1, r2, r3;
 
@@ -126,6 +171,8 @@ public class RandomValuesTest {
     @Test
     public void testCompanyName() throws Exception {
 
+        doLog(getCurrentMethodName(new RuntimeException()) + "...");
+
         RandomCompanyName rcn = RandomCompanyName.getInstance();
 
         String value = rcn.getAName(0);
@@ -163,6 +210,8 @@ public class RandomValuesTest {
     @Test
     public void testRandomDates() throws Exception {
 
+        doLog(getCurrentMethodName(new RuntimeException()) + "...");
+
         Calendar d;
         long diff;
         Calendar now = Calendar.getInstance();
@@ -188,6 +237,9 @@ public class RandomValuesTest {
 
     @Test
     public void testRandomDublincore() throws Exception {
+
+        doLog(getCurrentMethodName(new RuntimeException()) + "...");
+
         String[] users = { "Administrator", "jim", "john", "kate", "alan",
                 "rob", "julie" };
 
@@ -205,6 +257,8 @@ public class RandomValuesTest {
 
     @Test
     public void testLifecycle() throws Exception {
+
+        doLog(getCurrentMethodName(new RuntimeException()) + "...");
 
         String [] lcs = {"project", "validation", "approved"};
         String [] lct = {"to_validation", "to_approved"};
