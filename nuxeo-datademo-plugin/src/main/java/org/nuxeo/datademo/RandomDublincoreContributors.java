@@ -16,6 +16,7 @@
  */
 package org.nuxeo.datademo;
 
+import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.ecm.core.api.DocumentModel;
 
 /**

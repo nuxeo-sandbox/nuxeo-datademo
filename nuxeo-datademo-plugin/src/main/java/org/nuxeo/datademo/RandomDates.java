@@ -18,6 +18,8 @@ package org.nuxeo.datademo;
 
 import java.util.Calendar;
 
+import org.nuxeo.datademo.tools.ToolsMisc;
+
 /**
  * Class handling date utilities.
  *

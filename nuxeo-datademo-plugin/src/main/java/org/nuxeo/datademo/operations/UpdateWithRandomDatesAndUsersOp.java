@@ -28,7 +28,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.datademo.RandomDates;
 import org.nuxeo.datademo.RandomDublincoreContributors;
-import org.nuxeo.datademo.ToolsMisc;
+import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Context;
 import org.nuxeo.ecm.automation.core.annotations.Operation;

@@ -20,10 +20,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 
+import org.nuxeo.datademo.tools.ToolsMisc;
+import org.nuxeo.datademo.tools.TransactionInLoop;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
-import org.nuxeo.runtime.transaction.TransactionHelper;
 
 /**
  * ALlow to change lifecycle states by following transitions.
@@ -123,14 +124,11 @@ public class LifecycleHandler {
      */
     public void moveToRandomState(DocumentModelList inDocs) {
 
+        TransactionInLoop til = new TransactionInLoop();
         int count = 0;
         for (DocumentModel oneDoc : inDocs) {
             moveToRandomState(oneDoc);
-            count += 1;
-            if ((count % 10) == 0) {
-                TransactionHelper.commitOrRollbackTransaction();
-                TransactionHelper.startTransaction();
-            }
+            til.commitOrRollbackIfNeeded();
         }
     }
 
@@ -178,14 +176,11 @@ public class LifecycleHandler {
      */
     public static void moveToNextRandomState(DocumentModelList inDocs) {
 
+        TransactionInLoop til = new TransactionInLoop();
         int count = 0;
         for (DocumentModel oneDoc : inDocs) {
             moveToNextRandomState(oneDoc);
-            count += 1;
-            if ((count % 10) == 0) {
-                TransactionHelper.commitOrRollbackTransaction();
-                TransactionHelper.startTransaction();
-            }
+            til.commitOrRollbackIfNeeded();
         }
     }
 }

@@ -14,7 +14,7 @@
  * Contributors:
  *     Thibaud Arguillere
  */
-package org.nuxeo.datademo;
+package org.nuxeo.datademo.tools;
 
 import java.util.ArrayList;
 import java.util.Arrays;
