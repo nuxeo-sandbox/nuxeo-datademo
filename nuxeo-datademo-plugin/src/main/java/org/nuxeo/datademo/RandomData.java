@@ -206,7 +206,7 @@ public class RandomData {
                 int valuesCount = ToolsMisc.randomInt(1, 3);
                 String[] values = new String[valuesCount];
                 for (int i = 0; i < valuesCount; i++) {
-                    // We just hope we will not have 2 or 3 times the same.
+                    // We just hope we will not have 2 or 3 times the same value
                     values[i] = getRandomVocabularyValue(vocName);
                 }
                 inDoc.setPropertyValue(xpath, values);
@@ -236,6 +236,7 @@ public class RandomData {
      * <li>The fields can be multivalued. 1-3 values will be set, but notice
      * that it can happen the same value is set 2-3 times (we don't check this)</li>
      * </ul>
+     * <p>
      *
      * @param inFields
      * @param inXPathsAndVocs
