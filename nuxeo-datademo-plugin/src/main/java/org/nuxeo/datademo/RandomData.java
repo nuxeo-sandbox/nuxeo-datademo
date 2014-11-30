@@ -143,7 +143,7 @@ public class RandomData {
     }
 
     protected List<String> addVocabulary(String inVocName) {
-        if(vocsAndValues == null) {
+        if (vocsAndValues == null) {
             vocsAndValues = new HashMap<String, List<String>>();
         }
 
@@ -155,7 +155,6 @@ public class RandomData {
                     new HashMap<String, Serializable>(), "id");
             session.close();
             vocsAndValues.put(inVocName, entries);
-
         }
 
         return entries;
@@ -168,14 +167,55 @@ public class RandomData {
         return values.get(idx);
     }
 
-    /*
-    public void updateFieldWithVocabulary(DocumentModel inDoc, String inVocName) {
+    /**
+     * The method fills the fields in <code>inXPathsAndVocs</code> with a random
+     * value taken from the vocabulary.
+     * <p>
+     * For example with dublincore: <code>
+     * HashMap<String, String> f = new HashMap<String, String>();
+     * f.put("dc:nature", "nature");
+     * f.put("dc:language", "language");
+     * f.put("dc:coverage", "country");
+     * f.put("dc:subjects", "subtopic");
+     * </code>
+     * <p>
+     * <b>Important<i>:
+     * <ul>
+     * <li>The fields cannot be of type complex.</li>
+     * <li>The fields can be multivalued. 1-3 values will be set, but notice
+     * that it can happen the same value is set 2-3 times (we don't check this)</li>
+     * </ul>
+     * <p>
+     * <i>NOTICE</i>: When you have a list of DocumentModel, it will be faster
+     * to call
+     * <code>updateFieldsWithVocabularies(DocumentModelList inDocs, HashMap<String, String> inXPathsAndVocs)</code>
+     * instead.
+     *
+     * @param inDoc
+     * @param inXPathsAndVocs
+     *
+     * @since 7.1
+     */
+    public void updateFieldsWithVocabularies(DocumentModel inDoc,
+            HashMap<String, String> inXPathsAndVocs) {
 
-        List<String> values = addVocabulary(inVocName);
+        for (String xpath : inXPathsAndVocs.keySet()) {
+            String vocName = inXPathsAndVocs.get(xpath);
+            if (inDoc.getProperty(xpath).isList()) {
 
+                int valuesCount = ToolsMisc.randomInt(1, 3);
+                String[] values = new String[valuesCount];
+                for (int i = 0; i < valuesCount; i++) {
+                    // We just hope we will not have 2 or 3 times the same.
+                    values[i] = getRandomVocabularyValue(vocName);
+                }
+                inDoc.setPropertyValue(xpath, values);
 
+            } else {
+                inDoc.setPropertyValue(xpath, getRandomVocabularyValue(vocName));
+            }
+        }
     }
-    */
 
     /**
      * For each document in
@@ -188,9 +228,11 @@ public class RandomData {
      * f.put("dc:language", "language");
      * f.put("dc:coverage", "country");
      * f.put("dc:subjects", "subtopic");
-     * </code> <b>Important<i>:
+     * </code>
+     * <p>
+     * <b>Important<i>:
      * <ul>
-     * <li>The fields can't be of type complex.</li>
+     * <li>The fields cannot be of type complex.</li>
      * <li>The fields can be multivalued. 1-3 values will be set, but notice
      * that it can happen the same value is set 2-3 times (we don't check this)</li>
      * </ul>
@@ -256,9 +298,9 @@ public class RandomData {
                 if (fieldIsList[i]) {
                     int valuesCount = ToolsMisc.randomInt(1, 3);
                     String[] values = new String[valuesCount];
-                    for (int j = 0; j < valuesCount; j++) {
+                    for (int iValue = 0; iValue < valuesCount; iValue++) {
                         // We just hope we will not have 2 or 3 times the same.
-                        values[i] = getRandomVocabularyValue(vocs[i]);
+                        values[iValue] = getRandomVocabularyValue(vocs[i]);
                     }
                     oneDoc.setPropertyValue(fields[i], values);
 
@@ -302,5 +344,9 @@ public class RandomData {
     public RandomData setCommitModulo(int inCommitModulo) {
         commitModulo = inCommitModulo;
         return this;
+    }
+
+    public void resetVocabularies() {
+        vocsAndValues = null;
     }
 }
