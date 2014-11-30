@@ -19,7 +19,18 @@ package org.nuxeo.datademo.tools;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 /**
- *
+ * Wrapper around the
+ * <code>org.nuxeo.runtime.transaction.TransactionHelper</code> object.
+ * <p>
+ * Commit the transaction every n calls (default is 10). Typical usage is:
+ * <code>
+ * TransactionInLoop t = new TransactionInLoop();
+ * for(DocumentModel doc : foundDocs) { // foundDocs is a DocumentModelList
+ *     ... do something, update field
+ *     session.saveDocument(doc);
+ *     t.commitOrRollbackIfNeeded();
+ * }
+ * </code>
  *
  * @since 7.1
  */
@@ -40,7 +51,7 @@ public class TransactionInLoop {
 
     public void commitOrRollbackIfNeeded() {
 
-        if((counter % 10) == commitModulo) {
+        if ((counter % 10) == commitModulo) {
             TransactionHelper.commitOrRollbackTransaction();
             TransactionHelper.startTransaction();
         }
