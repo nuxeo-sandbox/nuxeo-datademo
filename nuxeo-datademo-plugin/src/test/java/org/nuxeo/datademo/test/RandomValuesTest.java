@@ -21,7 +21,6 @@ import static org.junit.Assert.*;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -260,9 +259,8 @@ public class RandomValuesTest {
 
         doLog(getCurrentMethodName(new RuntimeException()) + "...");
 
-        String [] lcs = {"project", "validation", "approved"};
-        String [] lct = {"to_validation", "to_approved"};
-
+        String[] lcs = { "project", "validation", "approved" };
+        String[] lct = { "to_validation", "to_approved" };
 
     }
 }

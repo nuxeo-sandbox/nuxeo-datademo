@@ -21,7 +21,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentModelList;
 
 /**
  *
@@ -99,5 +101,26 @@ public class ToolsMisc {
         }
 
         return inDoc;
+    }
+
+    /**
+     * Returns the CoreSession from the first document in the list, null if the
+     * list is empty.
+     * <p>
+     * To be used only when you are sure every document in <code>inDocs</code>
+     * belong to the same session
+     *
+     * @param inDocs
+     * @return
+     *
+     * @since 7.1
+     */
+    public static CoreSession getCoreSession(DocumentModelList inDocs) {
+
+        if (inDocs != null && inDocs.size() > 0) {
+            return inDocs.get(0).getCoreSession();
+        }
+
+        return null;
     }
 }
