@@ -16,8 +16,10 @@
  */
 package org.nuxeo.datademo;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,6 +28,8 @@ import org.nuxeo.datademo.tools.TransactionInLoop;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
+import org.nuxeo.ecm.directory.api.DirectoryService;
+import org.nuxeo.runtime.api.Framework;
 
 /**
  *
@@ -41,6 +45,8 @@ public class RandomData {
     protected int commitModulo = 0;
 
     protected int counter = 0;
+
+    protected HashMap<String, List<String>> vocsAndValues = null;
 
     public RandomData() {
         this(0, 0);
@@ -128,7 +134,141 @@ public class RandomData {
             oneDoc.setPropertyValue(inXPath, value);
 
             transactionLoop.saveDocumentAndCommitIfNeeded(oneDoc);
+            counter += 1;
+            if (hasLogModulo && (counter % logStatusModulo) == 0) {
+                ToolsMisc.forceLogInfo(log, logPrefix + counter + logSuffix);
+            }
+        }
 
+    }
+
+    protected List<String> addVocabulary(String inVocName) {
+        if(vocsAndValues == null) {
+            vocsAndValues = new HashMap<String, List<String>>();
+        }
+
+        List<String> entries = vocsAndValues.get(inVocName);
+        if (entries == null) {
+            org.nuxeo.ecm.directory.Session session = Framework.getService(
+                    DirectoryService.class).open(inVocName);
+            entries = session.getProjection(
+                    new HashMap<String, Serializable>(), "id");
+            session.close();
+            vocsAndValues.put(inVocName, entries);
+
+        }
+
+        return entries;
+    }
+
+    protected String getRandomVocabularyValue(String inVocName) {
+
+        List<String> values = addVocabulary(inVocName);
+        int idx = ToolsMisc.randomInt(0, values.size() - 1);
+        return values.get(idx);
+    }
+
+    /*
+    public void updateFieldWithVocabulary(DocumentModel inDoc, String inVocName) {
+
+        List<String> values = addVocabulary(inVocName);
+
+
+    }
+    */
+
+    /**
+     * For each document in
+     * <code>inDocs</doc>, the method fills the fields in <code>inXPathsAndVocs</code>
+     * with a random value taken from the vocabulary.
+     * <p>
+     * For example with dublincore: <code>
+     * HashMap<String, String> f = new HashMap<String, String>();
+     * f.put("dc:nature", "nature");
+     * f.put("dc:language", "language");
+     * f.put("dc:coverage", "country");
+     * f.put("dc:subjects", "subtopic");
+     * </code> <b>Important<i>:
+     * <ul>
+     * <li>The fields can't be of type complex.</li>
+     * <li>The fields can be multivalued. 1-3 values will be set, but notice
+     * that it can happen the same value is set 2-3 times (we don't check this)</li>
+     * </ul>
+     *
+     * @param inFields
+     * @param inXPathsAndVocs
+     *
+     * @since 7.1
+     */
+    public void updateFieldsWithVocabularies(DocumentModelList inDocs,
+            HashMap<String, String> inXPathsAndVocs) {
+
+        if (inDocs == null || inDocs.size() == 0) {
+            return;
+        }
+        // We need a DocumentModel to check if a field is multivalued
+        DocumentModel doc = inDocs.get(0);
+
+        if (inXPathsAndVocs == null || inXPathsAndVocs.size() == 0) {
+            return;
+        }
+        int fieldsCount = inXPathsAndVocs.size();
+        // We have a bunch of "synchronized" arrays ("synchronized": the same
+        // index applies to the same set of info). This is a bit (very little
+        // bit) faster than building an object of somplex HashMap.
+        String[] fields = new String[fieldsCount];
+        String[] vocs = new String[fieldsCount];
+        boolean[] fieldIsList = new boolean[fieldsCount];
+
+        int idx = 0;
+        String vocName;
+        HashMap<String, List<String>> vocsValues = new HashMap<String, List<String>>();
+        for (String xpath : inXPathsAndVocs.keySet()) {
+            fields[idx] = xpath;
+            fieldIsList[idx] = doc.getProperty(xpath).isList();
+            vocName = inXPathsAndVocs.get(xpath);
+            vocs[idx] = vocName;
+            addVocabulary(vocName);
+            if (!vocsValues.containsKey(vocName)) {
+                org.nuxeo.ecm.directory.Session session = Framework.getService(
+                        DirectoryService.class).open(vocName);
+                List<String> entries = session.getProjection(
+                        new HashMap<String, Serializable>(), "id");
+                session.close();
+                vocsValues.put(vocName, entries);
+            }
+
+            idx += 1;
+        }
+
+        boolean hasLogModulo = logStatusModulo > 0;
+        String logPrefix = "Updated count: ";
+        String logSuffix = "/" + inDocs.size();
+        CoreSession session = ToolsMisc.getCoreSession(inDocs);
+        TransactionInLoop transactionLoop = new TransactionInLoop(session,
+                commitModulo);
+        counter = 0;
+        int i;
+        String vocValue;
+        for (DocumentModel oneDoc : inDocs) {
+
+            for (i = 0; i < fieldsCount; i++) {
+                if (fieldIsList[i]) {
+                    int valuesCount = ToolsMisc.randomInt(1, 3);
+                    String[] values = new String[valuesCount];
+                    for (int j = 0; j < valuesCount; j++) {
+                        // We just hope we will not have 2 or 3 times the same.
+                        values[i] = getRandomVocabularyValue(vocs[i]);
+                    }
+                    oneDoc.setPropertyValue(fields[i], values);
+
+                } else {
+                    vocValue = getRandomVocabularyValue(vocs[i]);
+                    oneDoc.setPropertyValue(fields[i], vocValue);
+                }
+            }
+
+            transactionLoop.saveDocumentAndCommitIfNeeded(oneDoc);
             counter += 1;
             if (hasLogModulo && (counter % logStatusModulo) == 0) {
                 ToolsMisc.forceLogInfo(log, logPrefix + counter + logSuffix);
