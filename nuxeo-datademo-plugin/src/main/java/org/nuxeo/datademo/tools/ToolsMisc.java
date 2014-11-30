@@ -123,4 +123,21 @@ public class ToolsMisc {
 
         return null;
     }
+
+    /**
+     * Utility which uses <code>info()</code> if the INFO log level is enabled,
+     * else log as <code>warn()</code>
+     *
+     * @param inLog
+     * @param inWhat
+     *
+     * @since TODO
+     */
+    public static void forceLogInfo(org.apache.commons.logging.Log inLog, String inWhat) {
+        if (inLog.isInfoEnabled()) {
+            inLog.info(inWhat);
+        } else {
+            inLog.warn(inWhat);
+        }
+    }
 }

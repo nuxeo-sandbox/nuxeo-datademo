@@ -16,6 +16,8 @@
  */
 package org.nuxeo.datademo.tools;
 
+import org.nuxeo.ecm.core.api.CoreSession;
+import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 /**
@@ -24,11 +26,11 @@ import org.nuxeo.runtime.transaction.TransactionHelper;
  * <p>
  * Commit the transaction every n calls (default is 10). Typical usage is:
  * <code>
- * TransactionInLoop t = new TransactionInLoop();
- * for(DocumentModel doc : foundDocs) { // foundDocs is a DocumentModelList
- *     ... do something, update field
- *     session.saveDocument(doc);
- *     t.commitOrRollbackIfNeeded();
+ * //session is a CoreSession we got previously
+ * TransactionInLoop t = new TransactionInLoop(session);
+ * for(DocumentModel doc : foundDocs) {
+ *     //... do something, update fields, ...
+ *     t.saveDocumentAndCommitIfNeeded(doc);
  * }
  * </code>
  *
@@ -41,16 +43,28 @@ public class TransactionInLoop {
 
     protected int commitModulo = COMMIT_MODUL0;
 
+    protected CoreSession session = null;
+
     public TransactionInLoop() {
 
     }
 
-    public TransactionInLoop(int inCommitModulo) {
-        commitModulo = inCommitModulo < 0 ? COMMIT_MODUL0 : inCommitModulo;
+    public TransactionInLoop(CoreSession inSession) {
+        session = inSession;
+    }
+
+    public TransactionInLoop(CoreSession inSession, int inCommitModulo) {
+        session = inSession;
+        setCommitModulo(inCommitModulo);
+    }
+
+    public void saveDocumentAndCommitIfNeeded(DocumentModel inDoc) {
+
+        session.saveDocument(inDoc);
+        commitOrRollbackIfNeeded();
     }
 
     public void commitOrRollbackIfNeeded() {
-
         if ((counter % 10) == commitModulo) {
             TransactionHelper.commitOrRollbackTransaction();
             TransactionHelper.startTransaction();
@@ -62,11 +76,15 @@ public class TransactionInLoop {
     }
 
     public void setCommitModulo(int inCommitModulo) {
-        commitModulo = inCommitModulo < 0 ? COMMIT_MODUL0 : inCommitModulo;
+        commitModulo = inCommitModulo <= 0 ? COMMIT_MODUL0 : inCommitModulo;
     }
 
     public int getCounter() {
         return counter;
+    }
+
+    public void setCoreSession(CoreSession inSession) {
+        session = inSession;
     }
 
 }
