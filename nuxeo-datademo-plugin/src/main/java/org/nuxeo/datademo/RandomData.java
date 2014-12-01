@@ -16,11 +16,8 @@
  */
 package org.nuxeo.datademo;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.datademo.tools.ToolsMisc;
@@ -28,8 +25,6 @@ import org.nuxeo.datademo.tools.TransactionInLoop;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
-import org.nuxeo.ecm.directory.api.DirectoryService;
-import org.nuxeo.runtime.api.Framework;
 
 /**
  *
@@ -46,7 +41,8 @@ public class RandomData {
 
     protected int counter = 0;
 
-    protected HashMap<String, List<String>> vocsAndValues = null;
+    // protected HashMap<String, List<String>> vocsAndValues = null;
+    RandomVocabularies randomVocs = null;
 
     public RandomData() {
         this(0, 0);
@@ -62,6 +58,8 @@ public class RandomData {
 
         commitModulo = inCommitModulo < 0 ? 0 : inCommitModulo;
         logStatusModulo = inLogStatusModulo < 0 ? 0 : inCommitModulo;
+
+        randomVocs = new RandomVocabularies();
     }
 
     /**
@@ -142,31 +140,6 @@ public class RandomData {
 
     }
 
-    protected List<String> addVocabulary(String inVocName) {
-        if (vocsAndValues == null) {
-            vocsAndValues = new HashMap<String, List<String>>();
-        }
-
-        List<String> entries = vocsAndValues.get(inVocName);
-        if (entries == null) {
-            org.nuxeo.ecm.directory.Session session = Framework.getService(
-                    DirectoryService.class).open(inVocName);
-            entries = session.getProjection(
-                    new HashMap<String, Serializable>(), "id");
-            session.close();
-            vocsAndValues.put(inVocName, entries);
-        }
-
-        return entries;
-    }
-
-    protected String getRandomVocabularyValue(String inVocName) {
-
-        List<String> values = addVocabulary(inVocName);
-        int idx = ToolsMisc.randomInt(0, values.size() - 1);
-        return values.get(idx);
-    }
-
     /**
      * The method fills the fields in <code>inXPathsAndVocs</code> with a random
      * value taken from the vocabulary.
@@ -207,12 +180,13 @@ public class RandomData {
                 String[] values = new String[valuesCount];
                 for (int i = 0; i < valuesCount; i++) {
                     // We just hope we will not have 2 or 3 times the same value
-                    values[i] = getRandomVocabularyValue(vocName);
+                    values[i] = randomVocs.getRandomValue(vocName);
                 }
                 inDoc.setPropertyValue(xpath, values);
 
             } else {
-                inDoc.setPropertyValue(xpath, getRandomVocabularyValue(vocName));
+                inDoc.setPropertyValue(xpath,
+                        randomVocs.getRandomValue(vocName));
             }
         }
     }
@@ -257,29 +231,18 @@ public class RandomData {
         }
         int fieldsCount = inXPathsAndVocs.size();
         // We have a bunch of "synchronized" arrays ("synchronized": the same
-        // index applies to the same set of info). This is a bit (very little
-        // bit) faster than building an object of somplex HashMap.
+        // index applies to the same set of info in all arrays). This is a bit
+        // faster than building an object of complex HashMap, or checking the
+        // field property for each document
         String[] fields = new String[fieldsCount];
         String[] vocs = new String[fieldsCount];
         boolean[] fieldIsList = new boolean[fieldsCount];
 
         int idx = 0;
-        String vocName;
-        HashMap<String, List<String>> vocsValues = new HashMap<String, List<String>>();
         for (String xpath : inXPathsAndVocs.keySet()) {
             fields[idx] = xpath;
             fieldIsList[idx] = doc.getProperty(xpath).isList();
-            vocName = inXPathsAndVocs.get(xpath);
-            vocs[idx] = vocName;
-            addVocabulary(vocName);
-            if (!vocsValues.containsKey(vocName)) {
-                org.nuxeo.ecm.directory.Session session = Framework.getService(
-                        DirectoryService.class).open(vocName);
-                List<String> entries = session.getProjection(
-                        new HashMap<String, Serializable>(), "id");
-                session.close();
-                vocsValues.put(vocName, entries);
-            }
+            vocs[idx] = inXPathsAndVocs.get(xpath);
 
             idx += 1;
         }
@@ -301,12 +264,12 @@ public class RandomData {
                     String[] values = new String[valuesCount];
                     for (int iValue = 0; iValue < valuesCount; iValue++) {
                         // We just hope we will not have 2 or 3 times the same.
-                        values[iValue] = getRandomVocabularyValue(vocs[i]);
+                        values[iValue] = randomVocs.getRandomValue(vocs[i]);
                     }
                     oneDoc.setPropertyValue(fields[i], values);
 
                 } else {
-                    vocValue = getRandomVocabularyValue(vocs[i]);
+                    vocValue = randomVocs.getRandomValue(vocs[i]);
                     oneDoc.setPropertyValue(fields[i], vocValue);
                 }
             }
@@ -348,6 +311,6 @@ public class RandomData {
     }
 
     public void resetVocabularies() {
-        vocsAndValues = null;
+        randomVocs = null;
     }
 }
