@@ -19,7 +19,16 @@ package org.nuxeo.datademo;
 import java.util.HashMap;
 
 /**
- *
+ * Utility class: Loads in memory all the <code>id</code> of all the entries in
+ * the vocabularies, and can return (<code>getRandomValue§)</code>) a random
+ * value from one vocabulary.
+ * <p>
+ * <b>Notice</b>: The returned value is the
+ * <code>id</id> of the item, not its <code>label</code>.
+ * <p>
+ * <i>Warning</i>: As always with this kind of utility working in memory, make
+ * sure you don't shock the JVM with a lot of vocabularies and/or with huge
+ * vocabularies.
  *
  * @since 7.1
  */
@@ -27,10 +36,25 @@ public class RandomVocabularies {
 
     protected HashMap<String, RandomVocabulary> vocabularies = null;
 
+    /**
+     * Constructor
+     */
     public RandomVocabularies() {
         vocabularies = new HashMap<String, RandomVocabulary>();
     }
 
+    /**
+     * Loads all the <code>id</code> of the vocabulary. Does nothing if the
+     * vocabulary was already loaded.
+     * <p>
+     * This means that if the vocabulary was modified in between, it is not
+     * reloaded. Call <code>reload()</code> if needed
+     *
+     * @param inVocName
+     * @return
+     *
+     * @since 7.1
+     */
     public RandomVocabulary addVocabulary(String inVocName) {
 
         RandomVocabulary theVoc = vocabularies.get(inVocName);
@@ -41,9 +65,37 @@ public class RandomVocabularies {
         return theVoc;
     }
 
+    /**
+     * Return a random value (the <code>id</code> of the item) for this
+     * vocabulary.
+     *
+     * @param inVocName
+     * @return the RandomVocabulary
+     *
+     * @since 7.1
+     */
     public String getRandomValue(String inVocName) {
 
         RandomVocabulary theVoc = addVocabulary(inVocName);
         return theVoc.getRandomValue();
+    }
+
+    /**
+     * Force the reload of all the values of the vocabulary.
+     *
+     * @param inVocName
+     * @return the RandomVocabulary
+     *
+     * @since 7.1
+     */
+    public RandomVocabulary reload(String inVocName) {
+
+        RandomVocabulary theVoc = vocabularies.get(inVocName);
+        if(theVoc != null) {
+            theVoc.reload();
+        } else {
+            theVoc = addVocabulary(inVocName);
+        }
+        return theVoc;
     }
 }

@@ -25,7 +25,16 @@ import org.nuxeo.ecm.directory.api.DirectoryService;
 import org.nuxeo.runtime.api.Framework;
 
 /**
- *
+ * Utility class: Loads in memory all the <code>id</code> of all the entries in
+ * the vocabulary, and can return ( <code>getRandomValue§)</code>) a random
+ * value.
+ * <p>
+ * <b>Notice</b>: The returned value is the
+ * <code>id</id> of the item, not its <code>label</code>.
+ * <p>
+ * <i>Warning</i>: As always with this kind of utility working in memory, make
+ * sure you don't shock the JVM with a lot of vocabularies and/or with huge
+ * vocabularies.
  *
  * @since 7.1
  */
@@ -33,16 +42,19 @@ public class RandomVocabulary {
 
     List<String> values = null;
 
-    String name;
+    String vocName;
 
     int maxForRandom;
 
     public RandomVocabulary(String inVocName) {
 
-        name = inVocName;
+        vocName = inVocName;
+        loadValues();
+    }
 
+    protected void loadValues() {
         org.nuxeo.ecm.directory.Session session = Framework.getService(
-                DirectoryService.class).open(inVocName);
+                DirectoryService.class).open(vocName);
         values = session.getProjection(new HashMap<String, Serializable>(),
                 "id");
         session.close();
@@ -50,11 +62,16 @@ public class RandomVocabulary {
     }
 
     public String getRandomValue() {
-        return values.get( ToolsMisc.randomInt(0, maxForRandom) );
+        return values.get(ToolsMisc.randomInt(0, maxForRandom));
+    }
+
+    public void reload() {
+        values = null;
+        loadValues();
     }
 
     @Override
     public String toString() {
-        return "Vocabulary " + name + ": " + values.toString();
+        return "Vocabulary " + vocName + ": " + values.toString();
     }
 }
