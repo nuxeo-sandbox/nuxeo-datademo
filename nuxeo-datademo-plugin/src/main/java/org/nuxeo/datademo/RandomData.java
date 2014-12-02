@@ -41,8 +41,7 @@ public class RandomData {
 
     protected int counter = 0;
 
-    // protected HashMap<String, List<String>> vocsAndValues = null;
-    RandomVocabularies randomVocs = null;
+    protected RandomVocabularies randomVocs = null;
 
     public RandomData() {
         this(0, 0);
