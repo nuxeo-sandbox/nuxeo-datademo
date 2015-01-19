@@ -28,7 +28,15 @@ import org.nuxeo.common.utils.FileUtils;
 import org.nuxeo.datademo.tools.ToolsMisc;
 
 /**
- *
+ * Thread-safe class to get random company name built with 1-3 words ("Bravo",
+ * "Bravo East" or "Bravo East Yellow" for example).
+ * <p>
+ * <b>WARNING</b>
+ * <p>
+ * The class is thread safe only when at creation/release time. To avoid too
+ * many locks when <i>getting</i> a value (<code>getAName()</code>), there is
+ * no thread safety, because we assume you, the caller ;->, will make sure you
+ * don't try to get a value <i>after</if> having released the instance.
  *
  * @since 7.1
  */
@@ -48,7 +56,9 @@ public class RandomCompanyName {
 
     private static RandomCompanyName instance;
 
-    protected RandomCompanyName() throws IOException {
+    private static final String LOCK = "RandomCompanyName";
+
+    private RandomCompanyName() throws IOException {
 
         comps1 = new ArrayList<String>();
         comps2 = new ArrayList<String>();
@@ -60,20 +70,21 @@ public class RandomCompanyName {
             String line = null;
             while ((line = reader.readLine()) != null) {
                 count += 1;
-                if(!line.isEmpty()) {
-                    String [] elements = line.split("\t");
-                    if(elements.length > 2) {
+                if (!line.isEmpty()) {
+                    String[] elements = line.split("\t");
+                    if (elements.length > 2) {
                         comps1.add(elements[0]);
                         comps2.add(elements[1]);
                         comps3.add(elements[2]);
                     } else {
-                        log.error("Line #" + count + " does not contain at least 3 elements");
+                        log.error("Line #" + count
+                                + " does not contain at least 3 elements");
                     }
                 } else {
                     log.error("Line #" + count + " is empty");
                 }
             }
-            maxForRandom = comps1.size() -1;
+            maxForRandom = comps1.size() - 1;
         }
 
     }
@@ -87,11 +98,17 @@ public class RandomCompanyName {
         maxForRandom = -1;
     }
 
-    public synchronized static RandomCompanyName getInstance() throws IOException {
+    public static RandomCompanyName getInstance() throws IOException {
 
-        if(instance == null) {
-            instance = new RandomCompanyName();
+        if (instance == null) {
+            synchronized (LOCK) {
+                if (instance == null) {
+                    instance = new RandomCompanyName();
+                }
+            }
         }
+        
+        usageCount += 1;
         return instance;
     }
 
@@ -105,12 +122,12 @@ public class RandomCompanyName {
     public synchronized static void release() {
 
         usageCount -= 1;
-        if(usageCount == 0) {
+        if (usageCount == 0) {
             instance.cleanup();
             instance = null;
         }
 
-        if(usageCount < 0) {
+        if (usageCount < 0) {
             usageCount = 0;
             log.error("Releasing the instance too many time");
         }
@@ -124,13 +141,14 @@ public class RandomCompanyName {
 
         String name = "";
 
-        inElementsCount = inElementsCount < 1 || inElementsCount > 3 ? 3 : inElementsCount;
+        inElementsCount = inElementsCount < 1 || inElementsCount > 3 ? 3
+                : inElementsCount;
 
         name = comps1.get(ToolsMisc.randomInt(0, maxForRandom));
-        if(inElementsCount > 1) {
+        if (inElementsCount > 1) {
             name += " " + comps2.get(ToolsMisc.randomInt(0, maxForRandom));
         }
-        if(inElementsCount > 2) {
+        if (inElementsCount > 2) {
             name += " " + comps3.get(ToolsMisc.randomInt(0, maxForRandom));
         }
 

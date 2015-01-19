@@ -19,16 +19,22 @@ package org.nuxeo.datademo.test;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+
+import org.apache.catalina.tribes.util.Arrays;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.nuxeo.datademo.LifecycleHandler;
 import org.nuxeo.datademo.RandomCompanyName;
 import org.nuxeo.datademo.RandomDates;
+import org.nuxeo.datademo.RandomDublincoreContributors;
 import org.nuxeo.datademo.RandomFirstLastNames;
 import org.nuxeo.datademo.RandomFirstLastNames.GENDER;
+import org.nuxeo.datademo.RandomVocabulary;
 import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -64,23 +70,33 @@ public class RandomValuesTest {
         return currentElement.getMethodName();
     }
 
-    protected DocumentModel createDocument(String inType, String inTitle) {
+    protected DocumentModel createDocument(String inType, String inTitle, boolean inSave) {
 
         DocumentModel doc = coreSession.createDocumentModel(
                 parentOfTestDocs.getPathAsString(), inType, inType);
         doc.setPropertyValue("dc:title", inTitle);
-        return coreSession.createDocument(doc);
+        doc = coreSession.createDocument(doc);
 
+        if(inSave) {
+            coreSession.saveDocument(doc);
+        }
+        
+        return doc;
+    }
+    
+    protected DocumentModel createDocument(String inType, String inTitle) {
+        return createDocument(inType, inTitle, false);
     }
 
     @Before
     public void setUp() {
 
         parentOfTestDocs = coreSession.createDocumentModel("/",
-                "test-pictures", "Folder");
-        parentOfTestDocs.setPropertyValue("dc:title", "test-pictures");
+                "test-random-data", "Folder");
+        parentOfTestDocs.setPropertyValue("dc:title", "test-random-data");
         parentOfTestDocs = coreSession.createDocument(parentOfTestDocs);
         parentOfTestDocs = coreSession.saveDocument(parentOfTestDocs);
+        
     }
 
     @After
@@ -153,7 +169,6 @@ public class RandomValuesTest {
         value = r3.getAFirstName(GENDER.FEMALE);
         assertNotNull(value);
         assertTrue(!value.isEmpty());
-        RandomFirstLastNames.release();
 
         // "Thread" 3 calls release()
         RandomFirstLastNames.release();
@@ -182,7 +197,7 @@ public class RandomValuesTest {
 
         value = rcn.getAName(2);
         assertEquals(value, 2, value.split(" ").length);
-
+        
         RandomCompanyName.release();
     }
 
@@ -242,16 +257,40 @@ public class RandomValuesTest {
         String[] users = { "Administrator", "jim", "john", "kate", "alan",
                 "rob", "julie" };
 
-        /*
-         * // All the users in users
-         * RandomDublincoreContributors.setContributors(null, users);
-         *
-         * // Exactly 3 users RandomDublincoreContributors.setContributors(null,
-         * users, 3);
-         *
-         * // Between 3 and 5 users
-         * RandomDublincoreContributors.setContributors(null, users, 3, 5);
-         */
+        DocumentModel doc;
+        String [] contributors;
+        
+        doc = createDocument("File", "testRandomDublincore", true);
+        
+        // All the users in users
+        doc = RandomDublincoreContributors.setContributors(doc, users);
+        contributors = (String []) doc.getPropertyValue("dc:contributors");
+        boolean missing = false;
+        for(String s : users) {
+            boolean found = false;
+            for(String c : contributors) {
+                if(c.equals(s)) {
+                    found = true;
+                    break;
+                }
+            }
+            if(!found) {
+                missing = true;
+                break;
+            }
+        }
+        assertFalse(missing);
+        
+        // Exactly 3 users
+        doc = RandomDublincoreContributors.setContributors(doc, users, 3);
+        contributors = (String []) doc.getPropertyValue("dc:contributors");
+        assertEquals(3, contributors.length);
+        
+        // Between 3 and 5 users
+        doc = RandomDublincoreContributors.setContributors(doc, users, 3, 5);
+        contributors = (String []) doc.getPropertyValue("dc:contributors");
+        assertTrue(contributors.length >= 3);
+        assertTrue(contributors.length <= 5);
     }
 
     @Test
@@ -259,8 +298,26 @@ public class RandomValuesTest {
 
         doLog(getCurrentMethodName(new RuntimeException()) + "...");
 
-        String[] lcs = { "project", "validation", "approved" };
-        String[] lct = { "to_validation", "to_approved" };
+        String[] lcs = { "project", "approved" };
+        String[] lct = { "approve" };
 
+        LifecycleHandler lch = new LifecycleHandler(lcs, lct);
+        
+        DocumentModel doc;
+        
+        doc = createDocument("File", "test-moveToRandomState", true);
+        doc = lch.moveToRandomState(doc);
+        assertNotEquals("project", doc.getCurrentLifeCycleState());
+
+        doc = createDocument("File", "test-moveToNextRandomState", true);
+        doc = lch.moveToNextRandomState(doc, true);
+        assertNotEquals("project", doc.getCurrentLifeCycleState());
+        
+    }
+    
+    @Test
+    public void testRandomVocabulary() throws Exception {
+        //RandomVocabulary voc = new RandomVocabulary("country");
+        //System.out.println(voc.size());
     }
 }

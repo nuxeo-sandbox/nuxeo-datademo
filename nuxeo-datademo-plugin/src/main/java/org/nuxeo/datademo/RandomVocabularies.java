@@ -20,7 +20,7 @@ import java.util.HashMap;
 
 /**
  * Utility class: Loads in memory all the <code>id</code> of all the entries in
- * the vocabularies, and can return (<code>getRandomValue§)</code>) a random
+ * the vocabularies, and can return (<code>getRandomValue()</code>) a random
  * value from one vocabulary.
  * <p>
  * <b>Notice</b>: The returned value is the
@@ -41,6 +41,18 @@ public class RandomVocabularies {
      */
     public RandomVocabularies() {
         vocabularies = new HashMap<String, RandomVocabulary>();
+    }
+
+    /**
+     * Constructor
+     * 
+     * @param inVocNames
+     */
+    public RandomVocabularies(String...inVocNames) {
+        vocabularies = new HashMap<String, RandomVocabulary>();
+        for(String vocName : inVocNames) {
+            addVocabulary(vocName);
+        }
     }
 
     /**

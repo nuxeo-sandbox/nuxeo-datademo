@@ -28,7 +28,15 @@ import org.nuxeo.common.utils.FileUtils;
 import org.nuxeo.datademo.tools.ToolsMisc;
 
 /**
- *
+ * Thread-safe class to get random first/last names with gender.
+ * <p>
+ * <b>WARNING</b>
+ * <p>
+ * The class is thread safe only when at creation/release time. To avoid too
+ * many locks when <i>getting</i> a value (<code>getAFirstName()</code>,
+ * <code>getALastName()</code>), there is no thread safety, because we assume
+ * you, the caller ;->, will make sure you don't try to get a value
+ * <i>after</if> having released the instance.
  *
  * @since 7.1
  */
@@ -54,6 +62,8 @@ public class RandomFirstLastNames {
 
     private static RandomFirstLastNames instance = null;
 
+    private static final String LOCK = "RandomFirstLastNames";
+
     private static int usageCount = 0;
 
     protected ArrayList<String> loadFile(String inLocalPath) throws IOException {
@@ -64,7 +74,7 @@ public class RandomFirstLastNames {
         try (BufferedReader reader = Files.newBufferedReader(f.toPath())) {
             String line = null;
             while ((line = reader.readLine()) != null) {
-                if(!line.isEmpty()) {
+                if (!line.isEmpty()) {
                     as.add(line);
                 }
             }
@@ -73,7 +83,7 @@ public class RandomFirstLastNames {
         return as;
     }
 
-    protected RandomFirstLastNames() throws IOException {
+    private RandomFirstLastNames() throws IOException {
         firstNamesMale = loadFile("files/FirstNames-Male.txt");
         fnMaleMaxForRandom = firstNamesMale.size() - 1;
 
@@ -105,11 +115,14 @@ public class RandomFirstLastNames {
      *
      * @since 7.1
      */
-    public synchronized static RandomFirstLastNames getInstance()
-            throws IOException {
+    public static RandomFirstLastNames getInstance() throws IOException {
 
         if (instance == null) {
-            instance = new RandomFirstLastNames();
+            synchronized (LOCK) {
+                if (instance == null) {
+                    instance = new RandomFirstLastNames();
+                }
+            }
         }
 
         usageCount += 1;
@@ -126,12 +139,12 @@ public class RandomFirstLastNames {
     public synchronized static void release() {
 
         usageCount -= 1;
-        if(usageCount == 0) {
+        if (usageCount == 0) {
             instance.cleanup();
             instance = null;
         }
 
-        if(usageCount < 0) {
+        if (usageCount < 0) {
             usageCount = 0;
             log.error("Releasing the instance too many time");
         }
@@ -139,6 +152,10 @@ public class RandomFirstLastNames {
 
     public synchronized static int getUsageCount() {
         return usageCount;
+    }
+
+    public String getAFirstName() {
+        return getAFirstName(GENDER.ANY);
     }
 
     public String getAFirstName(GENDER inKind) {

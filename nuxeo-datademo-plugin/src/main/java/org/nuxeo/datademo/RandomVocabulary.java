@@ -26,7 +26,7 @@ import org.nuxeo.runtime.api.Framework;
 
 /**
  * Utility class: Loads in memory all the <code>id</code> of all the entries in
- * the vocabulary, and can return ( <code>getRandomValue§)</code>) a random
+ * the vocabulary, and can return ( <code>getRandomValue()</code>) a random
  * value.
  * <p>
  * <b>Notice</b>: The returned value is the
@@ -59,6 +59,11 @@ public class RandomVocabulary {
                 "id");
         session.close();
         maxForRandom = values.size() - 1;
+        
+    }
+    
+    public int size() {
+        return values.size();
     }
 
     public String getRandomValue() {

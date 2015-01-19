@@ -16,10 +16,12 @@
  */
 package org.nuxeo.datademo;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 
+import org.assertj.core.util.Collections;
 import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.datademo.tools.TransactionInLoop;
 import org.nuxeo.ecm.core.api.ClientException;
@@ -143,10 +145,22 @@ public class LifecycleHandler {
      *
      * @since 7.1
      */
-    public static DocumentModel moveToNextRandomState(DocumentModel inDoc) {
+    public static DocumentModel moveToNextRandomState(DocumentModel inDoc,
+            boolean inIgnoreDelete) {
 
         Collection<String> allowedTransitions = inDoc.getAllowedStateTransitions();
-
+                
+        //Collection<String> hop = Collections.
+        if(inIgnoreDelete && allowedTransitions.contains("delete")) {
+            ArrayList<String> tmp = new ArrayList<String>();
+            for(String c : allowedTransitions) {
+                if(!c.equals("delete")) {
+                    tmp.add(c);
+                }
+            }
+            allowedTransitions = java.util.Collections.unmodifiableCollection(tmp);
+        }
+        
         if (allowedTransitions.size() < 1) {
             return inDoc;
         }
@@ -174,12 +188,13 @@ public class LifecycleHandler {
      *
      * @since 7.1
      */
-    public static void moveToNextRandomState(DocumentModelList inDocs) {
+    public static void moveToNextRandomState(DocumentModelList inDocs,
+            boolean inIgnoreDelete) {
 
         TransactionInLoop til = new TransactionInLoop();
         int count = 0;
         for (DocumentModel oneDoc : inDocs) {
-            moveToNextRandomState(oneDoc);
+            moveToNextRandomState(oneDoc, inIgnoreDelete);
             til.commitOrRollbackIfNeeded();
         }
     }
