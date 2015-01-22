@@ -97,18 +97,15 @@ public class DocumentsWalkerTest {
         coreSession.save();
     }
 
+    /*
+     * Caller must have call testUtils.checkUniqueStrings_Start() before using
+     * this class
+     */
     protected class DocumentsCallbackImpl implements DocumentsCallback {
 
         long pageCount = -1; // irrelevant when walking documents one by one
 
         long documentCount = 0;
-
-        // Ensure we don't walk documents more than one single time
-        ArrayList<String> ids;
-
-        public DocumentsCallbackImpl() {
-            ids = new ArrayList<String>();
-        }
 
         @Override
         public boolean callback(List<DocumentModel> inDocs) {
@@ -117,11 +114,7 @@ public class DocumentsWalkerTest {
                 pageCount = 0;
             }
 
-            for (DocumentModel doc : inDocs) {
-                String id = doc.getId();
-                assertFalse(ids.contains(id));
-                ids.add(id);
-            }
+            testUtils.checkUniqueStrings_Add(inDocs);
 
             pageCount += 1;
             documentCount += inDocs.size();
@@ -134,9 +127,7 @@ public class DocumentsWalkerTest {
 
             documentCount += 1;
 
-            String id = inDoc.getId();
-            assertFalse(ids.contains(id));
-            ids.add(id);
+            testUtils.checkUniqueStrings_Add(inDoc.getId());
 
             return true;
         }
@@ -170,7 +161,9 @@ public class DocumentsWalkerTest {
         DocumentsCallbackImpl cb = new DocumentsCallbackImpl();
         DocumentsWalker dw = new DocumentsWalker(coreSession, nxql, PAGE_SIZE);
 
+        testUtils.checkUniqueStrings_Start();
         dw.runForEachPage(cb);
+        testUtils.checkUniqueStrings_Cleanup();
         assertEquals(EXPECTED_NUMBER_OF_PAGES, cb.getPageCount());
         assertEquals(NUMBER_OF_DOCS, cb.getDocumentCount());
 
@@ -195,7 +188,9 @@ public class DocumentsWalkerTest {
         DocumentsCallbackImpl cb = new DocumentsCallbackImpl();
         DocumentsWalker dw = new DocumentsWalker(coreSession, nxql, PAGE_SIZE);
 
+        testUtils.checkUniqueStrings_Start();
         dw.runForEachDocument(cb);
+        testUtils.checkUniqueStrings_Cleanup();
         assertEquals(NUMBER_OF_DOCS, cb.getDocumentCount());
 
         testUtils.endMethod();

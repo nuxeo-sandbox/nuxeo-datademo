@@ -16,6 +16,9 @@
  */
 package org.nuxeo.datademo.test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 
@@ -31,6 +34,8 @@ public class TestUtils {
     DocumentModel parentFolder;
     
     String currentMethodName;
+    
+    ArrayList<String> uniqueStrings;
     
     public TestUtils(CoreSession inSession) {
         session = inSession;
@@ -82,6 +87,29 @@ public class TestUtils {
     
     public void endMethod() {
         doLog(currentMethodName + ": done");
+    }
+    
+    public void checkUniqueStrings_Start() {
+        uniqueStrings = new ArrayList<String>();
+    }
+    
+    public void checkUniqueStrings_Add(String inStr) {
+        
+        if(uniqueStrings.contains(inStr)) {
+            throw new RuntimeException("Not unique string");
+        }
+        uniqueStrings.add(inStr);
+    }
+    
+    public void checkUniqueStrings_Add(List<DocumentModel> inDocs) {
+        
+        for(DocumentModel doc : inDocs) {
+            checkUniqueStrings_Add(doc.getId());
+        }
+    }
+    
+    public void checkUniqueStrings_Cleanup() {
+        uniqueStrings = null;
     }
 
 }

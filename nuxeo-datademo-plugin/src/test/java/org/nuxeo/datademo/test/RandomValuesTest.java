@@ -66,41 +66,18 @@ public class RandomValuesTest {
     public static long MS_IN_DAY = 24 * 3600000;
 
     protected DocumentModel parentOfTestDocs;
+    
+    protected TestUtils testUtils;
 
     @Inject
     CoreSession coreSession;
 
-    protected void doLog(String what) {
-        System.out.println(what);
-    }
-
-    // Not sure it's the best way to get the current method name, but at least
-    // it works
-    protected String getCurrentMethodName(RuntimeException e) {
-        StackTraceElement currentElement = e.getStackTrace()[0];
-        return currentElement.getMethodName();
-    }
-
-    protected DocumentModel createDocument(String inType, String inTitle,
-            boolean inSave) {
-
-        DocumentModel doc = coreSession.createDocumentModel(
-                parentOfTestDocs.getPathAsString(), inTitle, inType);
-        doc.setPropertyValue("dc:title", inTitle);
-        doc = coreSession.createDocument(doc);
-        if (inSave) {
-            doc = coreSession.saveDocument(doc);
-        }
-
-        return doc;
-    }
-
-    protected DocumentModel createDocument(String inType, String inTitle) {
-        return createDocument(inType, inTitle, false);
-    }
-
     @Before
     public void setUp() {
+        
+        if(testUtils == null) {
+            testUtils = new TestUtils(coreSession);
+        }
 
         parentOfTestDocs = coreSession.createDocumentModel("/",
                 "test-random-data", "Folder");
@@ -109,6 +86,8 @@ public class RandomValuesTest {
         parentOfTestDocs = coreSession.saveDocument(parentOfTestDocs);
 
         coreSession.save();
+        
+        testUtils.setParentFolder(parentOfTestDocs);
     }
 
     @After
@@ -116,12 +95,13 @@ public class RandomValuesTest {
         
         coreSession.removeDocument(parentOfTestDocs.getRef());
         coreSession.save();
+        testUtils.setParentFolder(null);
     }
 
     @Test
     public void testFirstLastName() throws Exception {
         
-        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
         
         RandomFirstLastNames rfln;
 
@@ -145,14 +125,14 @@ public class RandomValuesTest {
 
         RandomFirstLastNames.release();
 
-        semLog.endOfMethod();
+        testUtils.endMethod();
 
     }
 
     @Test
     public void testFirstLastNameSingleton() throws Exception {
 
-        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
         RandomFirstLastNames r1, r2, r3;
 
@@ -196,13 +176,13 @@ public class RandomValuesTest {
             assertEquals("NullPointerException", e.getClass().getSimpleName());
         }
 
-        semLog.endOfMethod();
+        testUtils.endMethod();
     }
 
     @Test
     public void testCompanyName() throws Exception {
 
-        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
         RandomCompanyName rcn = RandomCompanyName.getInstance();
 
@@ -217,7 +197,7 @@ public class RandomValuesTest {
 
         RandomCompanyName.release();
 
-        semLog.endOfMethod();
+        testUtils.endMethod();
     }
 
     protected boolean sameYMD(GregorianCalendar inD1, GregorianCalendar inD2) {
@@ -243,7 +223,7 @@ public class RandomValuesTest {
     @Test
     public void testRandomDates() throws Exception {
 
-        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
         Calendar d;
         long diff;
@@ -267,13 +247,13 @@ public class RandomValuesTest {
         assertTrue(diff >= (10 * MS_IN_DAY));
         assertTrue(diff <= (90 * MS_IN_DAY));
 
-        semLog.endOfMethod();
+        testUtils.endMethod();
     }
 
     @Test
     public void testRandomDublincore() throws Exception {
 
-        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
         String[] users = { "Administrator", "jim", "john", "kate", "alan",
                 "rob", "julie" };
@@ -281,7 +261,7 @@ public class RandomValuesTest {
         DocumentModel doc;
         String[] contributors;
 
-        doc = createDocument("File", "testRandomDublincore", true);
+        doc = testUtils.createDocument("File", "testRandomDublincore", true);
 
         // All the users in users
         doc = RandomDublincoreContributors.setContributors(doc, users);
@@ -313,13 +293,13 @@ public class RandomValuesTest {
         assertTrue(contributors.length >= 3);
         assertTrue(contributors.length <= 5);
 
-        semLog.endOfMethod();
+        testUtils.endMethod();
     }
 
     @Test
     public void testLifecycle() throws Exception {
 
-        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
         String[] lcs = { "project", "approved" };
         String[] lct = { "approve" };
@@ -328,27 +308,27 @@ public class RandomValuesTest {
 
         DocumentModel doc;
 
-        doc = createDocument("File", "test-moveToRandomState", true);
+        doc = testUtils.createDocument("File", "test-moveToRandomState", true);
         doc = lch.moveToRandomState(doc);
         assertNotEquals("project", doc.getCurrentLifeCycleState());
 
-        doc = createDocument("File", "test-moveToNextRandomState", true);
+        doc = testUtils.createDocument("File", "test-moveToNextRandomState", true);
         doc = LifecycleHandler.moveToNextRandomState(doc, true);
         assertNotEquals("project", doc.getCurrentLifeCycleState());
 
-        semLog.endOfMethod();
+        testUtils.endMethod();
     }
 
     @Ignore
     @Test
     public void testRandomVocabulary() throws Exception {
 
-        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
         
         RandomVocabulary voc = new RandomVocabulary("country");
         System.out.println(voc.size());
 
-        semLog.endOfMethod();
+        testUtils.endMethod();
     }
 
     public void dumpDocIds(List<DocumentModel> inDocs) {
@@ -360,7 +340,7 @@ public class RandomValuesTest {
     @Test
     public void testSimpleNXQLDocumentsPageProvider_docList() throws Exception {
 
-        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
         String nxql = "SELECT * FROM File";
 
@@ -370,7 +350,7 @@ public class RandomValuesTest {
         String EXPECTED_RESULTS = "[5, 5, 5, 5, 2]";
 
         for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
-            createDocument("File", "test-hop-" + i, true);
+            testUtils.createDocument("File", "test-hop-" + i, true);
         }
         coreSession.save();
 
@@ -384,25 +364,30 @@ public class RandomValuesTest {
         // This guard is just in case a future change breaks the loop and makes
         // it infinite
         int GUARD_COUNT = 0;
+        testUtils.checkUniqueStrings_Start();
         while (myPP.hasDocuments() || GUARD_COUNT > EXPECTED_NUMBER_OF_PAGES) {
             docs = myPP.getDocuments();
             pageCount += 1;
             check.add(docs.size());
+            
+            testUtils.checkUniqueStrings_Add(docs);
+            
             myPP.nextPage();
 
             GUARD_COUNT += GUARD_COUNT;
         }
+        testUtils.checkUniqueStrings_Cleanup();
         assertTrue(GUARD_COUNT <= EXPECTED_NUMBER_OF_PAGES);
         assertEquals(EXPECTED_NUMBER_OF_PAGES, pageCount);
         assertEquals(EXPECTED_RESULTS, check.toString());
 
-        semLog.endOfMethod();
+        testUtils.endMethod();
     }
 
     @Test
     public void testSimpleNXQLDocumentsPageProvider_eachDoc() throws Exception {
 
-        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
         String nxql = "SELECT * FROM File";
 
@@ -410,7 +395,7 @@ public class RandomValuesTest {
         int PAGE_SIZE = 5;
 
         for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
-            createDocument("File", "test-hop-" + i, true);
+            testUtils.createDocument("File", "test-hop-" + i, true);
         }
         coreSession.save();
 
@@ -422,31 +407,22 @@ public class RandomValuesTest {
             // This guard is just in case a future change breaks the loop and
             // makes it infinite
             int GUARD_COUNT = 0;
+            testUtils.checkUniqueStrings_Start();
             while (myPP.hasDocument() && GUARD_COUNT < NUMBER_OF_DOCS) {
                 DocumentModel doc = myPP.getDocument();
+                
+                testUtils.checkUniqueStrings_Add(doc.getId());
+                
                 myPP.nextDocument();
 
                 countDocs += 1;
                 GUARD_COUNT += 1;
             }
             assertTrue(GUARD_COUNT <= NUMBER_OF_DOCS);
+            testUtils.checkUniqueStrings_Cleanup();
         }
         assertEquals(NUMBER_OF_DOCS, countDocs);
 
-        semLog.endOfMethod();
-    }
-    
-    protected class StartEndMethodLog {
-        String name;
-        
-        public StartEndMethodLog(String inName) {
-            name = inName;
-            
-            doLog(name + "...");
-        }
-        
-        public void endOfMethod() {
-            doLog(name + "...done");
-        }
+        testUtils.endMethod();
     }
 }
