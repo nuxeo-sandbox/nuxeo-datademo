@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 
-import org.assertj.core.util.Collections;
 import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.datademo.tools.TransactionInLoop;
 import org.nuxeo.ecm.core.api.ClientException;

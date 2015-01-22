@@ -28,6 +28,7 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.nuxeo.datademo.LifecycleHandler;
 import org.nuxeo.datademo.RandomCompanyName;
@@ -326,12 +327,15 @@ public class RandomValuesTest {
 
     }
 
+    @Ignore
     @Test
     public void testRandomVocabulary() throws Exception {
-        // RandomVocabulary voc = new RandomVocabulary("country");
-        // System.out.println(voc.size());
+        RandomVocabulary voc = new RandomVocabulary("country");
+        System.out.println(voc.size());
     }
+    
 
+    @Ignore
     @Test
     public void hop() throws Exception {
 
