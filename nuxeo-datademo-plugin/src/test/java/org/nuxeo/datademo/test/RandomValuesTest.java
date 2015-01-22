@@ -335,7 +335,6 @@ public class RandomValuesTest {
     }
     
 
-    @Ignore
     @Test
     public void hop() throws Exception {
 
@@ -355,12 +354,18 @@ public class RandomValuesTest {
         props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY,
                 (Serializable) coreSession);
         cqpp.setProperties(props);
-        cqpp.setMaxPageSize(5);
+        //cqpp.setMaxPageSize(5);
+        cqpp.setPageSize(5);
 
         List<DocumentModel> docs = cqpp.getCurrentPage();
         while(docs != null && docs.size() > 0) {
             
             System.out.println("Docs: " + docs.size());
+            String ids = "";
+            for(DocumentModel d : docs) {
+                ids += "    " + d.getId() + "\n";
+            }
+            System.out.println(ids);
             System.out.println("Page: " + cqpp.getCurrentPageIndex());
             
             if(cqpp.isNextPageAvailable()) {

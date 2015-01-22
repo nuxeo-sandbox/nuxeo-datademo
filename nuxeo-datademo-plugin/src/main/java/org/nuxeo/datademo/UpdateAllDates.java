@@ -16,10 +16,12 @@
  */
 package org.nuxeo.datademo;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -53,6 +55,8 @@ public class UpdateAllDates {
     
     public static final int DEFAULT_DOCS_PER_TRANSACTION = 50;
     
+    public static final int DEFAULT_DOCS_PER_PAGE = 500;
+    
     public static final int DEFAULT_LOG_EVENY_N_DOCS = 500;
 
     CoreSession session;
@@ -70,6 +74,8 @@ public class UpdateAllDates {
     boolean wasBlockSyncPostCommitHandlers;
     
     int docsPerTransaction = DEFAULT_DOCS_PER_TRANSACTION;
+    
+    int docsPerPage = DEFAULT_DOCS_PER_PAGE;
     
     int logEveryNDocs = DEFAULT_LOG_EVENY_N_DOCS;
 
@@ -127,34 +133,30 @@ public class UpdateAllDates {
             }
 
             if (xpaths.size() > 0) {
-                /*
+                
                 String nxql;
-                DocumentModelList allDocs;
+                long updatedDocsCount = 0;
+                
+                ToolsMisc.forceLogInfo(log,
+                        "Update dates for documents of type: " + dt.getName());
 
-                ToolsMisc.forceLogInfo(log,
-                        "Update dates for documents of type: " + dt.getName());
-                nxql = "SELECT * FROM " + dt.getName();
-                
-                allDocs = session.query(nxql);
-                updateDocs(allDocs, xpaths);
-                */
-                
-                String nxql;
-                
-                ToolsMisc.forceLogInfo(log,
-                        "Update dates for documents of type: " + dt.getName());
-                nxql = "SELECT * FROM " + dt.getName();
-                
+                // Create CoreQueryDocumentPageProvider and updates its description 
                 CoreQueryDocumentPageProvider cqpp = new CoreQueryDocumentPageProvider();
                 CoreQueryPageProviderDescriptor ppDesc = new CoreQueryPageProviderDescriptor();
-                ppDesc.setPattern(nxql);
+                ppDesc.setPattern("SELECT * FROM " + dt.getName());
                 cqpp.setDefinition(ppDesc);
 
-                cqpp.firstPage();
+                HashMap<String, Serializable> props = new HashMap<String, Serializable>();
+                props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY,
+                        (Serializable) session);
+                cqpp.setProperties(props);
+                cqpp.setMaxPageSize(docsPerPage);
+                cqpp.setPageSize(docsPerPage);
+
                 List<DocumentModel> docs = cqpp.getCurrentPage();
-                updateDocCount = 0;
                 while(docs != null && docs.size() > 0) {
                     
+                    updatedDocsCount += docs.size();
                     updateDocs(docs, xpaths);
                     
                     if(cqpp.isNextPageAvailable()) {
@@ -164,9 +166,10 @@ public class UpdateAllDates {
                         docs = null;
                     }
                 }
-                
-            }
 
+                ToolsMisc.forceLogInfo(log,
+                        "" + updatedDocsCount + "'" + dt.getName() + "' documents updated");
+            }
         }
 
         if(inDisableListeners) {
@@ -275,7 +278,6 @@ public class UpdateAllDates {
         int count = 0;
         for(DocumentModel oneDoc : inDocs) {
             
-            
             for(String xpath : inXPaths) {
                 updateDate(oneDoc, xpath);
             }
@@ -326,6 +328,14 @@ public class UpdateAllDates {
 
     public void setLogeveryNDocs(int inNewValue) {
         logEveryNDocs = inNewValue > 0 ? inNewValue : DEFAULT_LOG_EVENY_N_DOCS;;
+    }
+
+    public int getDocsPerPage() {
+        return docsPerPage;
+    }
+
+    public void setDocsPerPage(int inNewValue) {
+        docsPerPage = inNewValue > 0 ? inNewValue : DEFAULT_DOCS_PER_PAGE;
     }
 
 }
