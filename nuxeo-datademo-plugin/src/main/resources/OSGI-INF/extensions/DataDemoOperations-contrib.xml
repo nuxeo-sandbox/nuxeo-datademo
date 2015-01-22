@@ -1,4 +1,4 @@
-<component name="org.nuxeo.datademo.operations.UpdateWithRandomDatesAndUsersOp">
+<component name="org.nuxeo.datademo.operations">
 
   <extension target="org.nuxeo.ecm.core.operation.OperationServiceComponent"
     point="operations" >

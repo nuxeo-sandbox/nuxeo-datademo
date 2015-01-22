@@ -1,0 +1,15 @@
+<component name="org.nuxeo.datademo.pageproviders">
+
+  <extension target="org.nuxeo.ecm.platform.query.api.PageProviderService"
+  point="providers">
+ 
+  <coreQueryPageProvider name="AllDocs">
+    <pattern>
+      SELECT * FROM Document
+    </pattern>
+    <pageSize>200</pageSize>
+  </coreQueryPageProvider>
+ 
+</extension>
+    
+</component>

@@ -28,8 +28,6 @@ import org.apache.commons.logging.LogFactory;
 import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.api.DocumentModelList;
-import org.nuxeo.ecm.core.api.IterableQueryResult;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.event.impl.EventListenerDescriptor;
 import org.nuxeo.ecm.core.event.impl.EventListenerList;
@@ -39,7 +37,8 @@ import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.schema.types.Field;
 import org.nuxeo.ecm.core.schema.types.Schema;
 import org.nuxeo.ecm.core.schema.types.Type;
-import org.nuxeo.ecm.platform.dublincore.listener.DublinCoreListener;
+import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
+import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
@@ -51,16 +50,28 @@ import org.nuxeo.runtime.transaction.TransactionHelper;
 public class UpdateAllDates {
 
     private static final Log log = LogFactory.getLog(UpdateAllDates.class);
+    
+    public static final int DEFAULT_DOCS_PER_TRANSACTION = 50;
+    
+    public static final int DEFAULT_LOG_EVENY_N_DOCS = 500;
 
     CoreSession session;
 
     int diffInDays;
+    
+    long updateDocCount = 0;
+    
+    long totalUpdatedDocs = 0;
 
     ArrayList<String> enabledListeners = new ArrayList<String>();
 
     boolean wasBlockAsyncHandlers;
 
     boolean wasBlockSyncPostCommitHandlers;
+    
+    int docsPerTransaction = DEFAULT_DOCS_PER_TRANSACTION;
+    
+    int logEveryNDocs = DEFAULT_LOG_EVENY_N_DOCS;
 
     public UpdateAllDates(CoreSession inSession, int inDays) {
 
@@ -96,6 +107,7 @@ public class UpdateAllDates {
             disableListeners();
         }
 
+        totalUpdatedDocs = 0;
         SchemaManager sm = Framework.getLocalService(SchemaManager.class);
         DocumentType[] allTypes = sm.getDocumentTypes();
         for (DocumentType dt : allTypes) {
@@ -115,20 +127,44 @@ public class UpdateAllDates {
             }
 
             if (xpaths.size() > 0) {
+                /*
                 String nxql;
                 DocumentModelList allDocs;
 
                 ToolsMisc.forceLogInfo(log,
                         "Update dates for documents of type: " + dt.getName());
                 nxql = "SELECT * FROM " + dt.getName();
+                
                 allDocs = session.query(nxql);
                 updateDocs(allDocs, xpaths);
+                */
                 
-             // à voir => utiliser l'iterator de queryAndFetch
-             //   IterableQueryResult iqr = session.queryAndFetch(query, queryType, params);
-             //   iqr.iterator().next();
+                String nxql;
                 
-                // Ou un PageProvider
+                ToolsMisc.forceLogInfo(log,
+                        "Update dates for documents of type: " + dt.getName());
+                nxql = "SELECT * FROM " + dt.getName();
+                
+                CoreQueryDocumentPageProvider cqpp = new CoreQueryDocumentPageProvider();
+                CoreQueryPageProviderDescriptor ppDesc = new CoreQueryPageProviderDescriptor();
+                ppDesc.setPattern(nxql);
+                cqpp.setDefinition(ppDesc);
+
+                cqpp.firstPage();
+                List<DocumentModel> docs = cqpp.getCurrentPage();
+                updateDocCount = 0;
+                while(docs != null && docs.size() > 0) {
+                    
+                    updateDocs(docs, xpaths);
+                    
+                    if(cqpp.isNextPageAvailable()) {
+                        cqpp.nextPage();
+                        docs = cqpp.getCurrentPage();
+                    } else {
+                        docs = null;
+                    }
+                }
+                
             }
 
         }
@@ -201,20 +237,48 @@ public class UpdateAllDates {
      *
      * @since 7.2
      */
-    protected void updateDocs(DocumentModelList inDocs, ArrayList<String> inXPaths) {
+    protected void updateDocs(List<DocumentModel> inDocs, ArrayList<String> inXPaths) {
         
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
         
+        /* Once saveDocument(s) is optimized, we will be able to use it.
+         * Not yet done as of "today" (JAN 2015)
+         */
+        /*
+        int total = 0;
+        Iterator<DocumentModel> it = inDocs.iterator();
+        while(it.hasNext()) {
+            
+            ArrayList<DocumentModel> subList = new ArrayList<DocumentModel>();
+            int count = 0;
+            do {
+                DocumentModel doc = it.next();
+                for(String xpath : inXPaths) {
+                    updateDate(doc, xpath);
+                }
+                subList.add(doc);
+                count += 1;
+                total += 1;
+            } while(it.hasNext() || count < docsPerTransaction);
+            
+            session.saveDocuments( (DocumentModel[]) subList.toArray() );
+            TransactionHelper.commitOrRollbackTransaction();
+            TransactionHelper.startTransaction();
+
+            if((total % logEveryNDocs) == 0) {
+                ToolsMisc.forceLogInfo(log, "" + count);
+            }
+        };
+        */
+        
         int count = 0;
         for(DocumentModel oneDoc : inDocs) {
+            
             
             for(String xpath : inXPaths) {
                 updateDate(oneDoc, xpath);
             }
-            /*
-             * UTILISER session.saveDocuments() (pluriel)
-             */
             
             // Save without dublincore and custom events (in the Studio project)
             //oneDoc.putContextData(DublinCoreListener.DISABLE_DUBLINCORE_LISTENER, true);
@@ -222,12 +286,15 @@ public class UpdateAllDates {
             oneDoc = session.saveDocument(oneDoc);
             
             count += 1;
-            if((count % 50) == 0) {
+            if((count % docsPerTransaction) == 0) {
                 TransactionHelper.commitOrRollbackTransaction();
                 TransactionHelper.startTransaction();
             }
-            if((count % 500) == 0) {
-                ToolsMisc.forceLogInfo(log, "" + count);
+            
+            updateDocCount += 1;
+            totalUpdatedDocs += 1;
+            if((updateDocCount % logEveryNDocs) == 0) {
+                ToolsMisc.forceLogInfo(log, "" + updateDocCount + " (total docs: " + updateDocCount + ")");
             }
         }
 
@@ -243,6 +310,22 @@ public class UpdateAllDates {
             d.add(Calendar.DATE, diffInDays);
             inDoc.setPropertyValue(inXPath, d);
         }
+    }
+    
+    public void setDocsPerTransaction(int inNewValue) {
+        docsPerTransaction = inNewValue > 0 ? inNewValue : DEFAULT_DOCS_PER_TRANSACTION;
+    }
+    
+    public int getDocsPerTransaction() {
+        return docsPerTransaction;
+    }
+
+    public int getLogeveryNDocs() {
+        return logEveryNDocs;
+    }
+
+    public void setLogeveryNDocs(int inNewValue) {
+        logEveryNDocs = inNewValue > 0 ? inNewValue : DEFAULT_LOG_EVENY_N_DOCS;;
     }
 
 }
