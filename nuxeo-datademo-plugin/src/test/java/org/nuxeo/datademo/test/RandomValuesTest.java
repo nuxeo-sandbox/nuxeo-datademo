@@ -20,6 +20,7 @@ package org.nuxeo.datademo.test;
 import static org.junit.Assert.*;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -37,6 +38,7 @@ import org.nuxeo.datademo.RandomDublincoreContributors;
 import org.nuxeo.datademo.RandomFirstLastNames;
 import org.nuxeo.datademo.RandomFirstLastNames.GENDER;
 import org.nuxeo.datademo.RandomVocabulary;
+import org.nuxeo.datademo.tools.SimpleNXQLDocumentsPageProvider;
 import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -106,22 +108,21 @@ public class RandomValuesTest {
         parentOfTestDocs = coreSession.createDocument(parentOfTestDocs);
         parentOfTestDocs = coreSession.saveDocument(parentOfTestDocs);
 
+        coreSession.save();
     }
 
     @After
     public void cleanup() {
-        coreSession.removeDocument(parentOfTestDocs.getRef());
         
-        coreSession.removeChildren(new PathRef("/"));
-
+        coreSession.removeDocument(parentOfTestDocs.getRef());
         coreSession.save();
     }
 
     @Test
     public void testFirstLastName() throws Exception {
-
-        doLog(getCurrentMethodName(new RuntimeException()) + "...");
-
+        
+        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+        
         RandomFirstLastNames rfln;
 
         rfln = RandomFirstLastNames.getInstance();
@@ -144,12 +145,14 @@ public class RandomValuesTest {
 
         RandomFirstLastNames.release();
 
+        semLog.endOfMethod();
+
     }
 
     @Test
     public void testFirstLastNameSingleton() throws Exception {
 
-        doLog(getCurrentMethodName(new RuntimeException()) + "...");
+        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
 
         RandomFirstLastNames r1, r2, r3;
 
@@ -192,12 +195,14 @@ public class RandomValuesTest {
         } catch (Exception e) {
             assertEquals("NullPointerException", e.getClass().getSimpleName());
         }
+
+        semLog.endOfMethod();
     }
 
     @Test
     public void testCompanyName() throws Exception {
 
-        doLog(getCurrentMethodName(new RuntimeException()) + "...");
+        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
 
         RandomCompanyName rcn = RandomCompanyName.getInstance();
 
@@ -211,6 +216,8 @@ public class RandomValuesTest {
         assertEquals(value, 2, value.split(" ").length);
 
         RandomCompanyName.release();
+
+        semLog.endOfMethod();
     }
 
     protected boolean sameYMD(GregorianCalendar inD1, GregorianCalendar inD2) {
@@ -236,7 +243,7 @@ public class RandomValuesTest {
     @Test
     public void testRandomDates() throws Exception {
 
-        doLog(getCurrentMethodName(new RuntimeException()) + "...");
+        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
 
         Calendar d;
         long diff;
@@ -259,12 +266,14 @@ public class RandomValuesTest {
         diff = d.getTimeInMillis() - now.getTimeInMillis();
         assertTrue(diff >= (10 * MS_IN_DAY));
         assertTrue(diff <= (90 * MS_IN_DAY));
+
+        semLog.endOfMethod();
     }
 
     @Test
     public void testRandomDublincore() throws Exception {
 
-        doLog(getCurrentMethodName(new RuntimeException()) + "...");
+        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
 
         String[] users = { "Administrator", "jim", "john", "kate", "alan",
                 "rob", "julie" };
@@ -303,12 +312,14 @@ public class RandomValuesTest {
         contributors = (String[]) doc.getPropertyValue("dc:contributors");
         assertTrue(contributors.length >= 3);
         assertTrue(contributors.length <= 5);
+
+        semLog.endOfMethod();
     }
 
     @Test
     public void testLifecycle() throws Exception {
 
-        doLog(getCurrentMethodName(new RuntimeException()) + "...");
+        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
 
         String[] lcs = { "project", "approved" };
         String[] lct = { "approve" };
@@ -325,57 +336,117 @@ public class RandomValuesTest {
         doc = LifecycleHandler.moveToNextRandomState(doc, true);
         assertNotEquals("project", doc.getCurrentLifeCycleState());
 
+        semLog.endOfMethod();
     }
 
     @Ignore
     @Test
     public void testRandomVocabulary() throws Exception {
+
+        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+        
         RandomVocabulary voc = new RandomVocabulary("country");
         System.out.println(voc.size());
+
+        semLog.endOfMethod();
     }
-    
+
+    public void dumpDocIds(List<DocumentModel> inDocs) {
+        for (DocumentModel doc : inDocs) {
+            System.out.println(doc.getId());
+        }
+    }
 
     @Test
-    public void hop() throws Exception {
+    public void testSimpleNXQLDocumentsPageProvider_docList() throws Exception {
+
+        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
 
         String nxql = "SELECT * FROM File";
 
-        for (int i = 1; i <= 22; i++) {
+        int NUMBER_OF_DOCS = 22;
+        int PAGE_SIZE = 5;
+        int EXPECTED_NUMBER_OF_PAGES = 5;
+        String EXPECTED_RESULTS = "[5, 5, 5, 5, 2]";
+
+        for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
             createDocument("File", "test-hop-" + i, true);
         }
         coreSession.save();
 
-        CoreQueryDocumentPageProvider cqpp = new CoreQueryDocumentPageProvider();
-        CoreQueryPageProviderDescriptor ppDesc = new CoreQueryPageProviderDescriptor();
-        ppDesc.setPattern(nxql);
-        cqpp.setDefinition(ppDesc);
+        SimpleNXQLDocumentsPageProvider myPP = new SimpleNXQLDocumentsPageProvider(
+                coreSession, nxql, PAGE_SIZE);
+        assertTrue(myPP.hasDocuments());
 
-        HashMap<String, Serializable> props = new HashMap<String, Serializable>();
-        props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY,
-                (Serializable) coreSession);
-        cqpp.setProperties(props);
-        //cqpp.setMaxPageSize(5);
-        cqpp.setPageSize(5);
+        List<DocumentModel> docs;
+        int pageCount = 0;
+        ArrayList<Integer> check = new ArrayList<Integer>();
+        // This guard is just in case a future change breaks the loop and makes
+        // it infinite
+        int GUARD_COUNT = 0;
+        while (myPP.hasDocuments() || GUARD_COUNT > EXPECTED_NUMBER_OF_PAGES) {
+            docs = myPP.getDocuments();
+            pageCount += 1;
+            check.add(docs.size());
+            myPP.nextPage();
 
-        List<DocumentModel> docs = cqpp.getCurrentPage();
-        while(docs != null && docs.size() > 0) {
-            
-            System.out.println("Docs: " + docs.size());
-            String ids = "";
-            for(DocumentModel d : docs) {
-                ids += "    " + d.getId() + "\n";
-            }
-            System.out.println(ids);
-            System.out.println("Page: " + cqpp.getCurrentPageIndex());
-            
-            if(cqpp.isNextPageAvailable()) {
-                cqpp.nextPage();
-                docs = cqpp.getCurrentPage();
-            } else {
-                docs = null;
-            }
+            GUARD_COUNT += GUARD_COUNT;
         }
+        assertTrue(GUARD_COUNT <= EXPECTED_NUMBER_OF_PAGES);
+        assertEquals(EXPECTED_NUMBER_OF_PAGES, pageCount);
+        assertEquals(EXPECTED_RESULTS, check.toString());
 
+        semLog.endOfMethod();
+    }
 
+    @Test
+    public void testSimpleNXQLDocumentsPageProvider_eachDoc() throws Exception {
+
+        StartEndMethodLog semLog = new StartEndMethodLog(getCurrentMethodName(new RuntimeException()));
+
+        String nxql = "SELECT * FROM File";
+
+        int NUMBER_OF_DOCS = 22;
+        int PAGE_SIZE = 5;
+
+        for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
+            createDocument("File", "test-hop-" + i, true);
+        }
+        coreSession.save();
+
+        int countDocs = 0;
+        SimpleNXQLDocumentsPageProvider myPP = new SimpleNXQLDocumentsPageProvider(
+                coreSession, nxql, PAGE_SIZE);
+        myPP.firstQuery();
+        if (myPP.hasDocuments()) {
+            // This guard is just in case a future change breaks the loop and
+            // makes it infinite
+            int GUARD_COUNT = 0;
+            while (myPP.hasDocument() && GUARD_COUNT < NUMBER_OF_DOCS) {
+                DocumentModel doc = myPP.getDocument();
+                myPP.nextDocument();
+
+                countDocs += 1;
+                GUARD_COUNT += 1;
+            }
+            assertTrue(GUARD_COUNT <= NUMBER_OF_DOCS);
+        }
+        assertEquals(NUMBER_OF_DOCS, countDocs);
+
+        semLog.endOfMethod();
+    }
+    
+    protected class StartEndMethodLog {
+        String name;
+        
+        public StartEndMethodLog(String inName) {
+            name = inName;
+            
+            doLog(name + "...");
+        }
+        
+        public void endOfMethod() {
+            doLog(name + "...done");
+        }
     }
 }

@@ -52,19 +52,19 @@ import org.nuxeo.runtime.transaction.TransactionHelper;
 public class UpdateAllDates {
 
     private static final Log log = LogFactory.getLog(UpdateAllDates.class);
-    
+
     public static final int DEFAULT_DOCS_PER_TRANSACTION = 50;
-    
+
     public static final int DEFAULT_DOCS_PER_PAGE = 500;
-    
+
     public static final int DEFAULT_LOG_EVENY_N_DOCS = 500;
 
     CoreSession session;
 
     int diffInDays;
-    
+
     long updateDocCount = 0;
-    
+
     long totalUpdatedDocs = 0;
 
     ArrayList<String> enabledListeners = new ArrayList<String>();
@@ -72,11 +72,11 @@ public class UpdateAllDates {
     boolean wasBlockAsyncHandlers;
 
     boolean wasBlockSyncPostCommitHandlers;
-    
+
     int docsPerTransaction = DEFAULT_DOCS_PER_TRANSACTION;
-    
+
     int docsPerPage = DEFAULT_DOCS_PER_PAGE;
-    
+
     int logEveryNDocs = DEFAULT_LOG_EVENY_N_DOCS;
 
     public UpdateAllDates(CoreSession inSession, int inDays) {
@@ -109,7 +109,7 @@ public class UpdateAllDates {
                 "\n--------------------\nIncrease all dates by " + diffInDays
                         + " days\n--------------------");
 
-        if(inDisableListeners) {
+        if (inDisableListeners) {
             disableListeners();
         }
 
@@ -123,9 +123,10 @@ public class UpdateAllDates {
             for (Schema schema : schemas) {
                 for (Field field : schema.getFields()) {
                     Type t = field.getType();
-                    
+
                     // PAsser par: field.getType().getTypeHierarchy()
-                    // et récupérer en fait le dernier type => ce sera le type de base
+                    // et récupérer en fait le dernier type => ce sera le type
+                    // de base
                     if (t.isSimpleType() && t.getName().equals("date")) {
                         xpaths.add("" + field.getName());
                     }
@@ -133,14 +134,15 @@ public class UpdateAllDates {
             }
 
             if (xpaths.size() > 0) {
-                
+
                 String nxql;
                 long updatedDocsCount = 0;
-                
+
                 ToolsMisc.forceLogInfo(log,
                         "Update dates for documents of type: " + dt.getName());
 
-                // Create CoreQueryDocumentPageProvider and updates its description 
+                // Create CoreQueryDocumentPageProvider and updates its
+                // description
                 CoreQueryDocumentPageProvider cqpp = new CoreQueryDocumentPageProvider();
                 CoreQueryPageProviderDescriptor ppDesc = new CoreQueryPageProviderDescriptor();
                 ppDesc.setPattern("SELECT * FROM " + dt.getName());
@@ -154,12 +156,12 @@ public class UpdateAllDates {
                 cqpp.setPageSize(docsPerPage);
 
                 List<DocumentModel> docs = cqpp.getCurrentPage();
-                while(docs != null && docs.size() > 0) {
-                    
+                while (docs != null && docs.size() > 0) {
+
                     updatedDocsCount += docs.size();
                     updateDocs(docs, xpaths);
-                    
-                    if(cqpp.isNextPageAvailable()) {
+
+                    if (cqpp.isNextPageAvailable()) {
                         cqpp.nextPage();
                         docs = cqpp.getCurrentPage();
                     } else {
@@ -168,11 +170,12 @@ public class UpdateAllDates {
                 }
 
                 ToolsMisc.forceLogInfo(log,
-                        "" + updatedDocsCount + "'" + dt.getName() + "' documents updated");
+                        "" + updatedDocsCount + "'" + dt.getName()
+                                + "' documents updated");
             }
         }
 
-        if(inDisableListeners) {
+        if (inDisableListeners) {
             restoreListeners();
         }
     }
@@ -192,8 +195,8 @@ public class UpdateAllDates {
 
         ArrayList<EventListenerDescriptor> descs = new ArrayList<EventListenerDescriptor>();
         descs.addAll(ell.getEnabledInlineListenersDescriptors());
-        //descs.addAll(ell.getEnabledAsyncPostCommitListenersDescriptors());
-        //descs.addAll(ell.getEnabledSyncPostCommitListenersDescriptors());
+        // descs.addAll(ell.getEnabledAsyncPostCommitListenersDescriptors());
+        // descs.addAll(ell.getEnabledSyncPostCommitListenersDescriptors());
 
         for (EventListenerDescriptor d : descs) {
             enabledListeners.add(d.getName());
@@ -218,8 +221,8 @@ public class UpdateAllDates {
 
         ArrayList<EventListenerDescriptor> descs = new ArrayList<EventListenerDescriptor>();
         descs.addAll(ell.getInlineListenersDescriptors());
-        //descs.addAll(ell.getAsyncPostCommitListenersDescriptors());
-        //descs.addAll(ell.getSyncPostCommitListenersDescriptors());
+        // descs.addAll(ell.getAsyncPostCommitListenersDescriptors());
+        // descs.addAll(ell.getSyncPostCommitListenersDescriptors());
 
         for (EventListenerDescriptor d : descs) {
             if (enabledListeners.contains(d.getName())) {
@@ -229,7 +232,7 @@ public class UpdateAllDates {
 
         ell.recomputeEnabledListeners();
     }
-    
+
     /**
      * Update all date fields whose xpaths are passed in <code>inXPaths</code>.
      * <p>
@@ -240,69 +243,63 @@ public class UpdateAllDates {
      *
      * @since 7.2
      */
-    protected void updateDocs(List<DocumentModel> inDocs, ArrayList<String> inXPaths) {
-        
+    protected void updateDocs(List<DocumentModel> inDocs,
+            ArrayList<String> inXPaths) {
+
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
-        
-        /* Once saveDocument(s) is optimized, we will be able to use it.
-         * Not yet done as of "today" (JAN 2015)
+
+        /*
+         * Once saveDocument(s) is optimized, we will be able to use it. Not yet
+         * done as of "today" (JAN 2015)
          */
         /*
-        int total = 0;
-        Iterator<DocumentModel> it = inDocs.iterator();
-        while(it.hasNext()) {
-            
-            ArrayList<DocumentModel> subList = new ArrayList<DocumentModel>();
-            int count = 0;
-            do {
-                DocumentModel doc = it.next();
-                for(String xpath : inXPaths) {
-                    updateDate(doc, xpath);
-                }
-                subList.add(doc);
-                count += 1;
-                total += 1;
-            } while(it.hasNext() || count < docsPerTransaction);
-            
-            session.saveDocuments( (DocumentModel[]) subList.toArray() );
-            TransactionHelper.commitOrRollbackTransaction();
-            TransactionHelper.startTransaction();
+         * int total = 0; Iterator<DocumentModel> it = inDocs.iterator();
+         * while(it.hasNext()) {
+         * 
+         * ArrayList<DocumentModel> subList = new ArrayList<DocumentModel>();
+         * int count = 0; do { DocumentModel doc = it.next(); for(String xpath :
+         * inXPaths) { updateDate(doc, xpath); } subList.add(doc); count += 1;
+         * total += 1; } while(it.hasNext() || count < docsPerTransaction);
+         * 
+         * session.saveDocuments( (DocumentModel[]) subList.toArray() );
+         * TransactionHelper.commitOrRollbackTransaction();
+         * TransactionHelper.startTransaction();
+         * 
+         * if((total % logEveryNDocs) == 0) { ToolsMisc.forceLogInfo(log, "" +
+         * count); } };
+         */
 
-            if((total % logEveryNDocs) == 0) {
-                ToolsMisc.forceLogInfo(log, "" + count);
-            }
-        };
-        */
-        
         int count = 0;
-        for(DocumentModel oneDoc : inDocs) {
-            
-            for(String xpath : inXPaths) {
+        for (DocumentModel oneDoc : inDocs) {
+
+            for (String xpath : inXPaths) {
                 updateDate(oneDoc, xpath);
             }
-            
+
             // Save without dublincore and custom events (in the Studio project)
-            //oneDoc.putContextData(DublinCoreListener.DISABLE_DUBLINCORE_LISTENER, true);
-            //oneDoc.putContextData("UpdatingData_NoEventPlease", true);
+            // oneDoc.putContextData(DublinCoreListener.DISABLE_DUBLINCORE_LISTENER,
+            // true);
+            // oneDoc.putContextData("UpdatingData_NoEventPlease", true);
             oneDoc = session.saveDocument(oneDoc);
-            
+
             count += 1;
-            if((count % docsPerTransaction) == 0) {
+            if ((count % docsPerTransaction) == 0) {
                 TransactionHelper.commitOrRollbackTransaction();
                 TransactionHelper.startTransaction();
             }
-            
+
             updateDocCount += 1;
             totalUpdatedDocs += 1;
-            if((updateDocCount % logEveryNDocs) == 0) {
-                ToolsMisc.forceLogInfo(log, "" + updateDocCount + " (total docs: " + updateDocCount + ")");
+            if ((updateDocCount % logEveryNDocs) == 0) {
+                ToolsMisc.forceLogInfo(log, "" + updateDocCount
+                        + " (total docs: " + updateDocCount + ")");
             }
         }
 
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
-        
+
     }
 
     protected void updateDate(DocumentModel inDoc, String inXPath) {
@@ -313,11 +310,12 @@ public class UpdateAllDates {
             inDoc.setPropertyValue(inXPath, d);
         }
     }
-    
+
     public void setDocsPerTransaction(int inNewValue) {
-        docsPerTransaction = inNewValue > 0 ? inNewValue : DEFAULT_DOCS_PER_TRANSACTION;
+        docsPerTransaction = inNewValue > 0 ? inNewValue
+                : DEFAULT_DOCS_PER_TRANSACTION;
     }
-    
+
     public int getDocsPerTransaction() {
         return docsPerTransaction;
     }
@@ -327,7 +325,8 @@ public class UpdateAllDates {
     }
 
     public void setLogeveryNDocs(int inNewValue) {
-        logEveryNDocs = inNewValue > 0 ? inNewValue : DEFAULT_LOG_EVENY_N_DOCS;;
+        logEveryNDocs = inNewValue > 0 ? inNewValue : DEFAULT_LOG_EVENY_N_DOCS;
+        ;
     }
 
     public int getDocsPerPage() {
