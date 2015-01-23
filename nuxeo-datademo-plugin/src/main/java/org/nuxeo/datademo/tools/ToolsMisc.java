@@ -24,6 +24,9 @@ import java.util.Random;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
+import org.nuxeo.ecm.core.schema.types.ComplexType;
+import org.nuxeo.ecm.core.schema.types.ListType;
+import org.nuxeo.ecm.core.schema.types.Type;
 
 /**
  *
@@ -113,7 +116,7 @@ public class ToolsMisc {
      * @param inDocs
      * @return
      *
-     * @since 7.1
+     * @since 7.2
      */
     public static CoreSession getCoreSession(DocumentModelList inDocs) {
 
@@ -131,7 +134,7 @@ public class ToolsMisc {
      * @param inLog
      * @param inWhat
      *
-     * @since TODO
+     * @since 7.2
      */
     public static void forceLogInfo(org.apache.commons.logging.Log inLog, String inWhat) {
         if (inLog.isInfoEnabled()) {
@@ -139,5 +142,31 @@ public class ToolsMisc {
         } else {
             inLog.warn(inWhat);
         }
+    }
+    
+    /**
+     * Handle only SimpleType and ListType fields (not ComplexTypes-
+     * 
+     * @param inType
+     * @return
+     *
+     * @since TODO
+     */
+    public static String getCoreFieldType(Type inType) {
+        
+        if (inType.isSimpleType()) {
+            Type[] typesHier = inType.getTypeHierarchy();
+            // JAN 2015, getTypeHierarchy says it never return a
+            // null array, but the array can be empty if the type is
+            // ANY.
+            // The array is also empty if the type is already a core
+            // one
+            if (typesHier.length > 0) {
+                inType = typesHier[typesHier.length - 1];
+            }
+            return inType.getName();
+        }
+        
+        return "";
     }
 }

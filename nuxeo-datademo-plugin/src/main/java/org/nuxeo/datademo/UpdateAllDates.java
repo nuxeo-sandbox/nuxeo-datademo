@@ -16,17 +16,17 @@
  */
 package org.nuxeo.datademo;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.nuxeo.datademo.tools.DocumentsCallback;
+import org.nuxeo.datademo.tools.DocumentsWalker;
 import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -39,8 +39,6 @@ import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.schema.types.Field;
 import org.nuxeo.ecm.core.schema.types.Schema;
 import org.nuxeo.ecm.core.schema.types.Type;
-import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
-import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
@@ -98,6 +96,67 @@ public class UpdateAllDates {
         }
     }
 
+    protected class FieldInfo {
+        String xpath;
+
+        boolean isList;
+
+        protected FieldInfo(String inXPath, boolean inIsList) {
+
+            xpath = inXPath;
+            isList = inIsList;
+        }
+
+        protected String getXPath() {
+            return xpath;
+        }
+
+        protected boolean getIsList() {
+            return isList;
+        }
+    }
+
+    protected class DocumentsCallbackImpl implements DocumentsCallback {
+
+        long pageCount = 0;
+
+        long documentCount = 0;
+
+        ArrayList<FieldInfo> fieldInfos;
+
+        protected DocumentsCallbackImpl(ArrayList<FieldInfo> inFieldsInfo) {
+            fieldInfos = inFieldsInfo;
+        }
+
+        @Override
+        public boolean callback(List<DocumentModel> inDocs) {
+
+            updateDocs(inDocs, fieldInfos);
+
+            pageCount += 1;
+            documentCount += inDocs.size();
+
+            return true;
+        }
+
+        @Override
+        public boolean callback(DocumentModel inDoc) {
+
+            // We don't use this one, so make sure we don't try to use it in he
+            // future
+            throw new UnsupportedOperationException();
+        }
+
+        public long getPageCount() {
+            return pageCount;
+        }
+
+        public long getDocumentCount() {
+            return documentCount;
+        }
+
+    }
+
     public void run(boolean inDisableListeners) {
 
         if (diffInDays < 1) {
@@ -118,60 +177,35 @@ public class UpdateAllDates {
         DocumentType[] allTypes = sm.getDocumentTypes();
         for (DocumentType dt : allTypes) {
             Collection<Schema> schemas = dt.getSchemas();
-            ArrayList<String> xpaths = new ArrayList<String>();
+            ArrayList<FieldInfo> fieldsInfo = new ArrayList<FieldInfo>();
 
             for (Schema schema : schemas) {
                 for (Field field : schema.getFields()) {
                     Type t = field.getType();
-
-                    // PAsser par: field.getType().getTypeHierarchy()
-                    // et récupérer en fait le dernier type => ce sera le type
-                    // de base
-                    if (t.isSimpleType() && t.getName().equals("date")) {
-                        xpaths.add("" + field.getName());
+                    if (t.isSimpleType() || t.isListType()) {
+                        String typeName = ToolsMisc.getCoreFieldType(t);
+                        if (typeName.equals("date")) {
+                            fieldsInfo.add(new FieldInfo("" + field.getName(),
+                                    t.isListType()));
+                        }
                     }
                 }
             }
 
-            if (xpaths.size() > 0) {
+            if (fieldsInfo.size() > 0) {
 
-                String nxql;
-                long updatedDocsCount = 0;
+                String nxql = "SELECT * FROM " + dt.getName();
 
                 ToolsMisc.forceLogInfo(log,
                         "Update dates for documents of type: " + dt.getName());
 
-                // Create CoreQueryDocumentPageProvider and updates its
-                // description
-                CoreQueryDocumentPageProvider cqpp = new CoreQueryDocumentPageProvider();
-                CoreQueryPageProviderDescriptor ppDesc = new CoreQueryPageProviderDescriptor();
-                ppDesc.setPattern("SELECT * FROM " + dt.getName());
-                cqpp.setDefinition(ppDesc);
+                DocumentsCallbackImpl cb = new DocumentsCallbackImpl(fieldsInfo);
+                DocumentsWalker dw = new DocumentsWalker(session, nxql,
+                        docsPerPage);
+                dw.runForEachPage(cb);
 
-                HashMap<String, Serializable> props = new HashMap<String, Serializable>();
-                props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY,
-                        (Serializable) session);
-                cqpp.setProperties(props);
-                cqpp.setMaxPageSize(docsPerPage);
-                cqpp.setPageSize(docsPerPage);
-
-                List<DocumentModel> docs = cqpp.getCurrentPage();
-                while (docs != null && docs.size() > 0) {
-
-                    updatedDocsCount += docs.size();
-                    updateDocs(docs, xpaths);
-
-                    if (cqpp.isNextPageAvailable()) {
-                        cqpp.nextPage();
-                        docs = cqpp.getCurrentPage();
-                    } else {
-                        docs = null;
-                    }
-                }
-
-                ToolsMisc.forceLogInfo(log,
-                        "" + updatedDocsCount + "'" + dt.getName()
-                                + "' documents updated");
+                ToolsMisc.forceLogInfo(log, "" + cb.getDocumentCount() + " '"
+                        + dt.getName() + "' documents updated");
             }
         }
 
@@ -244,37 +278,16 @@ public class UpdateAllDates {
      * @since 7.2
      */
     protected void updateDocs(List<DocumentModel> inDocs,
-            ArrayList<String> inXPaths) {
+            ArrayList<FieldInfo> inFieldsInfo) {
 
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
 
-        /*
-         * Once saveDocument(s) is optimized, we will be able to use it. Not yet
-         * done as of "today" (JAN 2015)
-         */
-        /*
-         * int total = 0; Iterator<DocumentModel> it = inDocs.iterator();
-         * while(it.hasNext()) {
-         * 
-         * ArrayList<DocumentModel> subList = new ArrayList<DocumentModel>();
-         * int count = 0; do { DocumentModel doc = it.next(); for(String xpath :
-         * inXPaths) { updateDate(doc, xpath); } subList.add(doc); count += 1;
-         * total += 1; } while(it.hasNext() || count < docsPerTransaction);
-         * 
-         * session.saveDocuments( (DocumentModel[]) subList.toArray() );
-         * TransactionHelper.commitOrRollbackTransaction();
-         * TransactionHelper.startTransaction();
-         * 
-         * if((total % logEveryNDocs) == 0) { ToolsMisc.forceLogInfo(log, "" +
-         * count); } };
-         */
-
         int count = 0;
         for (DocumentModel oneDoc : inDocs) {
 
-            for (String xpath : inXPaths) {
-                updateDate(oneDoc, xpath);
+            for (FieldInfo oneInfo : inFieldsInfo) {
+                updateDate(oneDoc, oneInfo);
             }
 
             // Save without dublincore and custom events (in the Studio project)
@@ -302,12 +315,22 @@ public class UpdateAllDates {
 
     }
 
-    protected void updateDate(DocumentModel inDoc, String inXPath) {
+    protected void updateDate(DocumentModel inDoc, FieldInfo inInfo) {
 
-        Calendar d = (Calendar) inDoc.getPropertyValue(inXPath);
-        if (d != null) {
-            d.add(Calendar.DATE, diffInDays);
-            inDoc.setPropertyValue(inXPath, d);
+        if (inInfo.getIsList()) {
+            Calendar[] dates = (Calendar[]) inDoc.getPropertyValue(inInfo.getXPath());
+            if(dates != null && dates.length > 0) {
+                for(Calendar d : dates) {
+                    d.add(Calendar.DATE, diffInDays);
+                }
+                inDoc.setPropertyValue(inInfo.getXPath(), dates);
+            }
+        } else {
+            Calendar d = (Calendar) inDoc.getPropertyValue(inInfo.getXPath());
+            if (d != null) {
+                d.add(Calendar.DATE, diffInDays);
+                inDoc.setPropertyValue(inInfo.getXPath(), d);
+            }
         }
     }
 

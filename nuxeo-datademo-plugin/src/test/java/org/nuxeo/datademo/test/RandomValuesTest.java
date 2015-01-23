@@ -22,6 +22,7 @@ import static org.junit.Assert.*;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
@@ -39,17 +40,25 @@ import org.nuxeo.datademo.RandomFirstLastNames;
 import org.nuxeo.datademo.RandomFirstLastNames.GENDER;
 import org.nuxeo.datademo.RandomVocabulary;
 import org.nuxeo.datademo.tools.SimpleNXQLDocumentsPageProvider;
+import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.api.impl.DocumentModelImpl;
+import org.nuxeo.ecm.core.schema.DocumentType;
+import org.nuxeo.ecm.core.schema.SchemaManager;
+import org.nuxeo.ecm.core.schema.types.ComplexType;
+import org.nuxeo.ecm.core.schema.types.Field;
+import org.nuxeo.ecm.core.schema.types.Schema;
+import org.nuxeo.ecm.core.schema.types.Type;
 import org.nuxeo.ecm.core.test.CoreFeature;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
 import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.platform.test.PlatformFeature;
+import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
@@ -66,7 +75,7 @@ public class RandomValuesTest {
     public static long MS_IN_DAY = 24 * 3600000;
 
     protected DocumentModel parentOfTestDocs;
-    
+
     protected TestUtils testUtils;
 
     @Inject
@@ -74,8 +83,8 @@ public class RandomValuesTest {
 
     @Before
     public void setUp() {
-        
-        if(testUtils == null) {
+
+        if (testUtils == null) {
             testUtils = new TestUtils(coreSession);
         }
 
@@ -86,13 +95,13 @@ public class RandomValuesTest {
         parentOfTestDocs = coreSession.saveDocument(parentOfTestDocs);
 
         coreSession.save();
-        
+
         testUtils.setParentFolder(parentOfTestDocs);
     }
 
     @After
     public void cleanup() {
-        
+
         coreSession.removeDocument(parentOfTestDocs.getRef());
         coreSession.save();
         testUtils.setParentFolder(null);
@@ -100,9 +109,9 @@ public class RandomValuesTest {
 
     @Test
     public void testFirstLastName() throws Exception {
-        
+
         testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
-        
+
         RandomFirstLastNames rfln;
 
         rfln = RandomFirstLastNames.getInstance();
@@ -312,7 +321,8 @@ public class RandomValuesTest {
         doc = lch.moveToRandomState(doc);
         assertNotEquals("project", doc.getCurrentLifeCycleState());
 
-        doc = testUtils.createDocument("File", "test-moveToNextRandomState", true);
+        doc = testUtils.createDocument("File", "test-moveToNextRandomState",
+                true);
         doc = LifecycleHandler.moveToNextRandomState(doc, true);
         assertNotEquals("project", doc.getCurrentLifeCycleState());
 
@@ -324,7 +334,7 @@ public class RandomValuesTest {
     public void testRandomVocabulary() throws Exception {
 
         testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
-        
+
         RandomVocabulary voc = new RandomVocabulary("country");
         System.out.println(voc.size());
 
@@ -369,9 +379,9 @@ public class RandomValuesTest {
             docs = myPP.getDocuments();
             pageCount += 1;
             check.add(docs.size());
-            
+
             testUtils.checkUniqueStrings_Add(docs);
-            
+
             myPP.nextPage();
 
             GUARD_COUNT += GUARD_COUNT;
@@ -410,9 +420,9 @@ public class RandomValuesTest {
             testUtils.checkUniqueStrings_Start();
             while (myPP.hasDocument() && GUARD_COUNT < NUMBER_OF_DOCS) {
                 DocumentModel doc = myPP.getDocument();
-                
+
                 testUtils.checkUniqueStrings_Add(doc.getId());
-                
+
                 myPP.nextDocument();
 
                 countDocs += 1;
@@ -424,5 +434,56 @@ public class RandomValuesTest {
         assertEquals(NUMBER_OF_DOCS, countDocs);
 
         testUtils.endMethod();
+    }
+
+    @Test
+    public void hop() throws Exception {
+        
+        SchemaManager sm = Framework.getLocalService(SchemaManager.class);
+        Schema ssss = sm.getSchema("file");
+        for (Field field : ssss.getFields()) {
+            Type t = field.getType();
+            if(t.isSimpleType()) {
+                testUtils.doLog("" + t.getName());
+            } else if(t.isComplexType()) {
+                testUtils.doLog("isComplexType");
+                ComplexType ct = (ComplexType) t;
+                for (Field f : ct.getFields()) {
+                    Type t2 = field.getType();
+                    if(t2.isComplexType()) {
+                        ComplexType ct2 = (ComplexType) t;
+                        for (Field f2 : ct2.getFields()) {
+                            Type t3 = field.getType();
+                            testUtils.doLog("" + t3.getName());
+                            
+                        }
+                    }
+                }
+            } else {
+                testUtils.doLog("?????");
+            }
+        }
+
+        /*
+        SchemaManager sm = Framework.getLocalService(SchemaManager.class);
+        DocumentType[] allTypes = sm.getDocumentTypes();
+        for (DocumentType dt : allTypes) {
+            Collection<Schema> schemas = dt.getSchemas();
+            ArrayList<String> xpaths = new ArrayList<String>();
+
+            for (Schema schema : schemas) {
+                for (Field field : schema.getFields()) {
+
+                    Type t = field.getType();
+
+                    String typeName = ToolsMisc.getCoreFieldType(t);
+                    if (typeName.equals("string")) {
+                        xpaths.add("" + field.getName());
+                    }
+                }
+            }
+            System.out.println(xpaths.toString());
+        }
+        */
     }
 }
