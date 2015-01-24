@@ -90,9 +90,11 @@ public class UpdateAllDatesTest {
 
     // DocWithListDates document type, ListOfDates schema and its date_list
     // are declared in doc-type-contrib.xml and test_dates_list.xsd
-    protected static final String DOCTYPE_WITH_DATESLIST = "TestDoc";
+    protected static final String DOCTYPE_TEST_DOC = "TestDoc";
 
     protected static final String XPATH_DATES_LIST = "TestSchema:list_of_dates_main";
+    
+    protected static final String XPATH_COMPLEX_DATEFIELD = "TestSchema:the_complex/one_date";
 
     @Inject
     CoreSession coreSession;
@@ -196,10 +198,10 @@ public class UpdateAllDatesTest {
         TransactionHelper.startTransaction();
 
         testUtils.doLog("Creating " + NUMBER_OF_DOCS + " '"
-                + DOCTYPE_WITH_DATESLIST + "'");
+                + DOCTYPE_TEST_DOC + "'");
         for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
             DocumentModel doc = testUtils.createDocument(
-                    DOCTYPE_WITH_DATESLIST, "doc-with-datesList-" + i, false);
+                    DOCTYPE_TEST_DOC, "doc-with-datesList-" + i, false);
 
             int count = ToolsMisc.randomInt(1, 5);
             Calendar[] dates = RandomDates.buildDates(count, null,
@@ -214,7 +216,7 @@ public class UpdateAllDatesTest {
         // We also want some null fields
         NUMBER_OF_DOCS += 6;
         for (int i = 1; i < 6; i++) {
-            testUtils.createDocument(DOCTYPE_WITH_DATESLIST,
+            testUtils.createDocument(DOCTYPE_TEST_DOC,
                     "doc-with-datesList-" + i, true);
         }
         coreSession.save();
@@ -223,7 +225,7 @@ public class UpdateAllDatesTest {
 
         // ==========> Save values for checking <==========
         // Let's save the first NUMBER_OF_DOCS_TO_CHECK dates
-        String nxql = "SELECT * FROM " + DOCTYPE_WITH_DATESLIST;
+        String nxql = "SELECT * FROM " + DOCTYPE_TEST_DOC;
         DocumentModelList docs = coreSession.query(nxql);
         assertNotNull(docs);
         assertTrue(docs.size() > 0);
@@ -265,20 +267,100 @@ public class UpdateAllDatesTest {
         testUtils.endMethod();
 
     }
+
+    @Test
+    public void testUpdateAlDates_Complex() throws Exception {
+
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
+
+        int NUMBER_OF_DOCS = 1010;
+        int NUMBER_OF_DOCS_TO_CHECK = 100;
+        int NUMBER_OF_DAYS = 4;
+        long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;
+
+        assertTrue(NUMBER_OF_DOCS_TO_CHECK < NUMBER_OF_DOCS);
+
+        // ==========> Create the documents <==========
+        TransactionHelper.commitOrRollbackTransaction();
+        TransactionHelper.startTransaction();
+
+        testUtils.doLog("Creating " + NUMBER_OF_DOCS + " '"
+                + DOCTYPE_TEST_DOC + "'");
+        for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
+            DocumentModel doc = testUtils.createDocument(
+                    DOCTYPE_TEST_DOC, "doc-complex-simple-date-" + i, false);
+
+            Calendar c = RandomDates.buildDate(null, 4, 10, false);
+            doc.setPropertyValue(XPATH_COMPLEX_DATEFIELD, c);
+
+            doc = coreSession.saveDocument(doc);
+            if ((i % 50) == 0) {
+                coreSession.save();
+            }
+        }
+        coreSession.save();
+        TransactionHelper.commitOrRollbackTransaction();
+        TransactionHelper.startTransaction();
+
+        // ==========> Save values for checking <==========
+        // Let's save the first NUMBER_OF_DOCS_TO_CHECK dates
+        String nxql = "SELECT * FROM " + DOCTYPE_TEST_DOC;
+        DocumentModelList docs = coreSession.query(nxql);
+        assertNotNull(docs);
+        assertTrue(docs.size() > 0);
+        HashMap<String, Long> originalIDsAndMS = new HashMap<String, Long>();
+        for (int i = 0; i < NUMBER_OF_DOCS_TO_CHECK; i++) {
+            DocumentModel doc = docs.get(i);
+            Calendar c = (Calendar) doc.getPropertyValue(XPATH_COMPLEX_DATEFIELD);
+            if (c != null) {
+                originalIDsAndMS.put(doc.getId(), c.getTimeInMillis());
+            }
+        }
+
+        // ==========> Update all docs <==========
+        UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
+        ual.run(true);
+
+        // ==========> Check new dates <==========
+        for (String id : originalIDsAndMS.keySet()) {
+            DocumentModel doc = coreSession.getDocument(new IdRef(id));
+            Calendar c = (Calendar) doc.getPropertyValue(XPATH_COMPLEX_DATEFIELD);
+            long ms = c.getTimeInMillis();
+            long originalMS = originalIDsAndMS.get(id);
+            
+            assertEquals(NUMBER_OF_MILLISECONDS, ms - originalMS);
+        }
+
+        testUtils.endMethod();
+
+    }
     
-
-
     @Test
     public void hop() throws Exception {
         
-        String nxql = "SELECT * FROM Document WHERE TestSchema:the_complex/list_of_dates/0 IS NULL";
-        
+
+        TransactionHelper.commitOrRollbackTransaction();
+        TransactionHelper.startTransaction();
+        DocumentModel doc = testUtils.createDocument(
+                DOCTYPE_TEST_DOC, "doc-complex-simple-date-" + 8989, true);
+        coreSession.save();
+        TransactionHelper.commitOrRollbackTransaction();
+        TransactionHelper.startTransaction();
+
+        //String nxql = "SELECT * FROM Document WHERE TestSchema:the_complex/list_of_dates/0 IS NULL";
+        String nxql = "SELECT * FROM " + DOCTYPE_TEST_DOC;
         DocumentModelList docs = coreSession.query(nxql);
-        System.out.println(docs.size());
+        DocumentModel zedoc = docs.get(0);
+        
+        //Marche pas: "TestSchema:the_complex_multivalued/0/list_of_dates_2";
+      //Marche pas: "TestSchema:the_complex_multivalued/0/list_of_dates_2/0";
+        String zez = "TestSchema:the_complex_multivalued";
+        Object o = zedoc.getPropertyValue(zez);
         
         if(docs == null || (docs != null && docs.size() != -2343)) {
             return;
         }
+        // ==============================================================
         
         SchemaManager sm = Framework.getLocalService(SchemaManager.class);
         Schema schema = sm.getSchema("TestSchema");

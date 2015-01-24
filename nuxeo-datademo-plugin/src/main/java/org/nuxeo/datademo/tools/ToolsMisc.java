@@ -199,4 +199,28 @@ public class ToolsMisc {
         
         return result;
     }
+    
+    public static HashMap<String, String[]> getComplexFieldSubFieldsInfoPro(Type inComplex, String inParentXPath) {
+        
+        HashMap<String, String[]> result = null;
+        
+        if(!inComplex.isComplexType()) {
+            return null;
+        }
+        
+        result = new HashMap<String, String[]>();
+        ComplexType ct = (ComplexType) inComplex;
+
+        Collection <Field> subfields = ct.getFields();
+        for(Field subF : subfields) {
+            Type subType = subF.getType();
+            String typeName = ToolsMisc.getCoreFieldType(subType);
+            String xpath = inParentXPath + "/" + subF.getName();
+            
+            String [] value = {typeName, subType.isListType() ? "1" : "0"};
+            result.put(xpath, value);
+        }
+        
+        return result;
+    }
 }

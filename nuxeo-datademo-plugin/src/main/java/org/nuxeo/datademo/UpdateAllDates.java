@@ -16,10 +16,12 @@
  */
 package org.nuxeo.datademo;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -109,40 +111,64 @@ public class UpdateAllDates {
 
         private boolean isList;
 
-        private boolean isComplex;
+        private String complexListParentXPath;
 
-        protected FieldInfo(String inXPath) {
-            this(inXPath, false, false);
+        private String subFieldName;
+
+        public FieldInfo(String inXPath) {
+            this(inXPath, false, "");
         }
 
-        protected FieldInfo(String inXPath, boolean inIsList) {
-            this(inXPath, inIsList, false);
+        public FieldInfo(String inXPath, boolean inIsList) {
+            this(inXPath, inIsList, "");
         }
 
-        protected FieldInfo(String inXPath, boolean inIsList,
-                boolean inIsComplex) {
-
+        public FieldInfo(String inXPath, boolean inIsList,
+                String inComplexListParentXPath) {
             xpath = inXPath;
             isList = inIsList;
-            isComplex = inIsComplex;
+            complexListParentXPath = inComplexListParentXPath;
+            if (complexListParentXPath != null
+                    && !complexListParentXPath.isEmpty()) {
+                subFieldName = xpath.replace(complexListParentXPath + "/", "");
+            }
         }
 
-        protected String getXPath() {
+        public String getXPath() {
             return xpath;
         }
 
-        protected boolean isSimple() {
-            return !isList && !isComplex;
+        public boolean isSimple() {
+            return !isList;
         }
 
-        protected boolean isList() {
+        public boolean isList() {
             return isList;
         }
 
-        protected boolean isComplex() {
-            return isComplex;
+        public String getComplexListParentXPath() {
+            return complexListParentXPath;
         }
 
+        public String getSubFieldName() {
+            return subFieldName;
+        }
+
+        public String toString() {
+            String str = xpath;
+
+            if (isList) {
+                str += "/List";
+            } else {
+                str += "/Simple";
+            }
+
+            if (!complexListParentXPath.isEmpty()) {
+                str += "/" + complexListParentXPath;
+            }
+
+            return str;
+        }
     }
 
     /*
@@ -230,32 +256,33 @@ public class UpdateAllDates {
                             fieldsInfo.add(new FieldInfo("" + field.getName(),
                                     t.isListType()));
                         } else if (t.isListType()) {
-                            System.out.println("" + field.getName());
+
                             // Check if complex-multivalued
-                            ListType lt = (ListType) t;
                             Type subType = ((ListType) t).getFieldType();
                             if (subType.isComplexType()) {
                                 ComplexType ct = (ComplexType) subType;
+                                String parentXPath = field.getName().getPrefixedName();
                                 Map<String, String> subFieldsXPathsAndTypes = ToolsMisc.getComplexFieldSubFieldsInfo(
-                                        ct, field.getName().getPrefixedName());
+                                        ct, parentXPath);
                                 for (String oneXPath : subFieldsXPathsAndTypes.keySet()) {
                                     if (subFieldsXPathsAndTypes.get(oneXPath).equals(
                                             "date")) {
                                         fieldsInfo.add(new FieldInfo(oneXPath,
-                                                true, true));
+                                                true, parentXPath));
                                     }
                                 }
                             }
                         }
                     } else if (t.isComplexType()) {
                         ComplexType ct = (ComplexType) t;
-                        Map<String, String> subFieldsXPathsAndTypes = ToolsMisc.getComplexFieldSubFieldsInfo(
+                        String parentXPath = field.getName().getPrefixedName();
+                        Map<String, String[]> subFieldsXPathsAndTypes = ToolsMisc.getComplexFieldSubFieldsInfoPro(
                                 ct, field.getName().getPrefixedName());
                         for (String oneXPath : subFieldsXPathsAndTypes.keySet()) {
-                            if (subFieldsXPathsAndTypes.get(oneXPath).equals(
-                                    "date")) {
-                                fieldsInfo.add(new FieldInfo(oneXPath, false,
-                                        true));
+                            String[] subInfos = subFieldsXPathsAndTypes.get(oneXPath);
+                            if (subInfos[0].equals("date")) {
+                                fieldsInfo.add(new FieldInfo(oneXPath,
+                                        subInfos[1].equals("1")));
                             }
                         }
                     }
@@ -383,28 +410,80 @@ public class UpdateAllDates {
 
     }
 
+    protected void updateListOfDates(DocumentModel inDoc, String inXPath) {
+        Calendar[] dates = (Calendar[]) inDoc.getPropertyValue(inXPath);
+        if (dates != null && dates.length > 0) {
+            for (Calendar d : dates) {
+                d.add(Calendar.DATE, diffInDays);
+            }
+            inDoc.setPropertyValue(inXPath, dates);
+        }
+    }
+
     protected void updateDate(DocumentModel inDoc, FieldInfo inInfo) {
 
         if (inInfo.isSimple()) {
+            if (inInfo.getXPath().equals("TestSchema:the_complex/list_of_dates")) {
+                System.out.println(inInfo.getXPath());
+            }
             Calendar d = (Calendar) inDoc.getPropertyValue(inInfo.getXPath());
             if (d != null) {
                 d.add(Calendar.DATE, diffInDays);
                 inDoc.setPropertyValue(inInfo.getXPath(), d);
             }
-        } else if (inInfo.isList() && !inInfo.isComplex()) {
-            Calendar[] dates = (Calendar[]) inDoc.getPropertyValue(inInfo.getXPath());
-            if (dates != null && dates.length > 0) {
-                for (Calendar d : dates) {
-                    d.add(Calendar.DATE, diffInDays);
-                }
-                inDoc.setPropertyValue(inInfo.getXPath(), dates);
-            }
-        } else if (inInfo.isList() && inInfo.isComplex()) {
-            // To be done
+        } else if (inInfo.isList()) {
+            String complexParentXPath = inInfo.getComplexListParentXPath();
+            String subFieldName = inInfo.getSubFieldName();
+            if (complexParentXPath != null && !complexParentXPath.isEmpty()) {
 
-        } else if (inInfo.isComplex()) {
-            // To be done
-        }
+                // ArrayList<Serializable> values = (ArrayList<Serializable>)
+                // inDoc.getPropertyValue(complexParentXPath);
+                if(complexParentXPath.startsWith("Test")) {
+                    String oucou = "";
+                }
+                Serializable values = inDoc.getPropertyValue(complexParentXPath);
+                if (values != null) {
+                    int length = 0;
+                    if (values instanceof ArrayList) {
+                        length = ((ArrayList) values).size();
+                    } else if (values instanceof HashMap) {
+                        length = ((HashMap) values).size();
+                    } else if (values instanceof Object[]) {
+                        length = ((Object[]) values).length;
+                    }
+                    for (int i = 0; i < length; i++) {
+                        String finalXPath = complexParentXPath + "/" + i + "/"
+                                + subFieldName;
+                        updateListOfDates(inDoc, finalXPath);
+                    }
+                }
+
+            } else {
+                updateListOfDates(inDoc, inInfo.getXPath());
+                /*
+                 * Calendar[] dates = (Calendar[])
+                 * inDoc.getPropertyValue(inInfo.getXPath()); if (dates != null
+                 * && dates.length > 0) { for (Calendar d : dates) {
+                 * d.add(Calendar.DATE, diffInDays); }
+                 * inDoc.setPropertyValue(inInfo.getXPath(), dates); }
+                 */
+            }
+        } else {
+            if (inInfo.getXPath().equals("TestSchema:the_complex/list_of_dates")) {
+                System.out.println(inInfo.getXPath());
+            }
+        }/*
+          * else if (inInfo.isList() && inInfo.isComplex()) { // To be done
+          * if(inInfo.getXPath().equals("TestSchema:the_complex/list_of_dates"))
+          * { System.out.println(inInfo.getXPath()); }
+          * 
+          * } else if (inInfo.isComplex()) {
+          * if(inInfo.getXPath().equals("TestSchema:the_complex/list_of_dates"))
+          * { System.out.println(inInfo.getXPath()); } Calendar d = (Calendar)
+          * inDoc.getPropertyValue(inInfo.getXPath()); if (d != null) {
+          * d.add(Calendar.DATE, diffInDays);
+          * inDoc.setPropertyValue(inInfo.getXPath(), d); } }
+          */
     }
 
     public void setDocsPerTransaction(int inNewValue) {
