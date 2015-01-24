@@ -8,7 +8,7 @@ Golf	L.A.	Production
 Hotel	Washington	Secretary
 India	Texas	Software
 Juliette	Chicago	Mouse
-Kilo	New York	Technics
+Kilo	Eclipse	Technics
 Lima	Dallas	Services
 Mike	Montain	Inc.
 November	Bart	Engineering
@@ -22,8 +22,8 @@ Uniform	Audio	Consulting
 Victor	Developing	Construction
 Whisky	Business	Computing
 X-Ray	Cartography	Interactive
-Yankee	Center	Creations Cool
-Zoulou	Computer	Diffusing Ring
+Yankee	Center	Creations
+Zoulou	Computer	Diffusing
 Alan	Right	Left
 Key	Chain	Box
 Mega	Giga	Tera
@@ -99,3 +99,5 @@ Seconds	Milliseconds	Nano
 Pico	Terra	Terre
 Earth	Sable	Sand
 Rock	Roll	Twist
+Country	Star	Train
+Lemon	Dance	Hat

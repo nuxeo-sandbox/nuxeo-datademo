@@ -42,7 +42,7 @@ public class RandomDates {
     /**
      * Some methods can build dates relative to "today". By default, this
      * utility class stores "today" once for all, which can be a problem if you
-     * intend to use it for a long time. In this case, call this method âssing
+     * intend to use it for a long time. In this case, call this method passing
      * it <cde>false</false>.
      *
      * @param inValue
@@ -149,6 +149,24 @@ public class RandomDates {
         return result;
     }
 
+    /**
+     * Return a Calendar array of <code>inCount</code> length. For each element,
+     * call {@link buildDate} is called.
+     * <p>
+     * If <code>inFrom</code> is null, the returned date is relative to "now".
+     * <p>
+     * To return a date which is older than <code>inFrom</code>, set
+     * <code>inRewind</code> to true.
+     * 
+     * @param inCount
+     * @param inFrom
+     * @param inDaysFrom
+     * @param inDaysTo
+     * @param inRewind
+     * @return
+     *
+     * @since 7.2
+     */
     public static Calendar[] buildDates(int inCount, Calendar inFrom,
             int inDaysFrom, int inDaysTo, boolean inRewind) {
 

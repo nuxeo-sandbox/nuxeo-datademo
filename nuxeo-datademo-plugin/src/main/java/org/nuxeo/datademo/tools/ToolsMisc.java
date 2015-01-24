@@ -145,7 +145,7 @@ public class ToolsMisc {
     }
     
     /**
-     * Handle only SimpleType and ListType fields (not ComplexTypes-
+     * Handle only SimpleType and ListType fields (not ComplexTypes)
      * 
      * @param inType
      * @return
@@ -153,6 +153,10 @@ public class ToolsMisc {
      * @since TODO
      */
     public static String getCoreFieldType(Type inType) {
+        
+        if(inType.isListType()) {
+            inType = ((ListType) inType).getFieldType();
+        }
         
         if (inType.isSimpleType()) {
             Type[] typesHier = inType.getTypeHierarchy();
