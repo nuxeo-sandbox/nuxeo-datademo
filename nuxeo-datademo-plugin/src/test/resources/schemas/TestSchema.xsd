@@ -3,12 +3,43 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
   xmlns:nxs="http://www.nuxeo.org/ecm/project/schemas/datademo"
   targetNamespace="http://www.nuxeo.org/ecm/project/schemas/datademo">
-  <!-- helper XSD definitions for date list types -->
+  <!-- XSD definitions for our list types (list of dates, of complex, ...) -->
   <xs:simpleType name="dateList">
     <xs:list itemType="xs:date"/>
   </xs:simpleType>
+  
+  <!-- We have the following fields in the schema:
+  the_complex
+    complex with sub-fields:
+      one_date
+      list_of_dates
+  
+  the_complex_multivalued
+    complex, multivalued, with subfields:
+      one_date_2
+      list_of_dates_2
+  -->
+  <xs:complexType name="the_complexType">
+    <xs:sequence>
+      <xs:element name="one_date" type="xs:date"/>
+      <xs:element name="list_of_dates" type="nxs:dateList"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="the_complex_multivaluedListType">
+    <xs:sequence>
+      <xs:element name="item" type="nxs:the_complex_multivaluedType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="the_complex_multivaluedType">
+    <xs:sequence>
+      <xs:element name="one_date_2" type="xs:date"/>
+      <xs:element name="list_of_dates_2" type="nxs:dateList"/>
+    </xs:sequence>
+  </xs:complexType> 
 
   <xs:element name="main_string" type="xs:string"/>
   <xs:element name="list_of_dates_main" type="nxs:dateList"/>
+  <xs:element name="the_complex" type="nxs:the_complexType"/>
+  <xs:element name="the_complex_multivalued" type="nxs:the_complex_multivaluedListType"/>
 
 </xs:schema>
