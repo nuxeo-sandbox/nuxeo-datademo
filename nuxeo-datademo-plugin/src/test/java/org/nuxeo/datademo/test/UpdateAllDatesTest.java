@@ -108,7 +108,7 @@ public class UpdateAllDatesTest {
 
         testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
-        int NUMBER_OF_DOCS = 5000;
+        int NUMBER_OF_DOCS = 1010;
         int NUMBER_OF_DOCS_TO_CHECK = 10;
         int NUMBER_OF_DAYS = 4;
         long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;

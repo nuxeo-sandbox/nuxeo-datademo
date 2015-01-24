@@ -30,6 +30,7 @@ import org.nuxeo.datademo.tools.DocumentsWalker;
 import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.event.impl.EventListenerDescriptor;
 import org.nuxeo.ecm.core.event.impl.EventListenerList;
@@ -196,6 +197,11 @@ public class UpdateAllDates {
 
                 String nxql = "SELECT * FROM " + dt.getName();
 
+                DocumentModelList docs = session.query(nxql, 1);
+                if(docs.size() == 0) {
+                    continue;
+                }
+
                 ToolsMisc.forceLogInfo(log,
                         "Update dates for documents of type: " + dt.getName());
 
@@ -229,8 +235,6 @@ public class UpdateAllDates {
 
         ArrayList<EventListenerDescriptor> descs = new ArrayList<EventListenerDescriptor>();
         descs.addAll(ell.getEnabledInlineListenersDescriptors());
-        // descs.addAll(ell.getEnabledAsyncPostCommitListenersDescriptors());
-        // descs.addAll(ell.getEnabledSyncPostCommitListenersDescriptors());
 
         for (EventListenerDescriptor d : descs) {
             enabledListeners.add(d.getName());
@@ -255,8 +259,6 @@ public class UpdateAllDates {
 
         ArrayList<EventListenerDescriptor> descs = new ArrayList<EventListenerDescriptor>();
         descs.addAll(ell.getInlineListenersDescriptors());
-        // descs.addAll(ell.getAsyncPostCommitListenersDescriptors());
-        // descs.addAll(ell.getSyncPostCommitListenersDescriptors());
 
         for (EventListenerDescriptor d : descs) {
             if (enabledListeners.contains(d.getName())) {
@@ -265,6 +267,8 @@ public class UpdateAllDates {
         }
 
         ell.recomputeEnabledListeners();
+
+        ToolsMisc.forceLogInfo(log, "Listeners restored.");
     }
 
     /**
@@ -289,11 +293,6 @@ public class UpdateAllDates {
             for (FieldInfo oneInfo : inFieldsInfo) {
                 updateDate(oneDoc, oneInfo);
             }
-
-            // Save without dublincore and custom events (in the Studio project)
-            // oneDoc.putContextData(DublinCoreListener.DISABLE_DUBLINCORE_LISTENER,
-            // true);
-            // oneDoc.putContextData("UpdatingData_NoEventPlease", true);
             oneDoc = session.saveDocument(oneDoc);
 
             count += 1;
