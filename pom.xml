@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.nuxeo</groupId>
     <artifactId>nuxeo-addons-parent</artifactId>
-    <version>7.1-SNAPSHOT</version>
+    <version>7.2-SNAPSHOT</version>
   </parent>
   <groupId>org.nuxeo.datademo</groupId>
   <artifactId>nuxeo-datademo-parent</artifactId>
@@ -17,7 +17,7 @@
     <module>nuxeo-datademo-mp</module>
   </modules>
   <properties>
-    <nuxeo.datademo.version>7.1-SNAPSHOT</nuxeo.datademo.version>
+    <nuxeo.datademo.version>7.2-SNAPSHOT</nuxeo.datademo.version>
   </properties>
   <dependencyManagement>
     <dependencies>
