@@ -21,6 +21,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
@@ -37,7 +38,9 @@ import org.nuxeo.ecm.core.event.impl.EventListenerList;
 import org.nuxeo.ecm.core.event.impl.EventServiceImpl;
 import org.nuxeo.ecm.core.schema.DocumentType;
 import org.nuxeo.ecm.core.schema.SchemaManager;
+import org.nuxeo.ecm.core.schema.types.ComplexType;
 import org.nuxeo.ecm.core.schema.types.Field;
+import org.nuxeo.ecm.core.schema.types.ListType;
 import org.nuxeo.ecm.core.schema.types.Schema;
 import org.nuxeo.ecm.core.schema.types.Type;
 import org.nuxeo.runtime.api.Framework;
@@ -97,26 +100,55 @@ public class UpdateAllDates {
         }
     }
 
+    /*
+     * Utility class used at the time the date is updated for a document. It
+     * tells what kind of field we have (simple, list, complex)
+     */
     protected class FieldInfo {
-        String xpath;
+        private String xpath;
 
-        boolean isList;
+        private boolean isList;
+
+        private boolean isComplex;
+
+        protected FieldInfo(String inXPath) {
+            this(inXPath, false, false);
+        }
 
         protected FieldInfo(String inXPath, boolean inIsList) {
+            this(inXPath, inIsList, false);
+        }
+
+        protected FieldInfo(String inXPath, boolean inIsList,
+                boolean inIsComplex) {
 
             xpath = inXPath;
             isList = inIsList;
+            isComplex = inIsComplex;
         }
 
         protected String getXPath() {
             return xpath;
         }
 
-        protected boolean getIsList() {
+        protected boolean isSimple() {
+            return !isList && !isComplex;
+        }
+
+        protected boolean isList() {
             return isList;
         }
+
+        protected boolean isComplex() {
+            return isComplex;
+        }
+
     }
 
+    /*
+     * The callback for the DocumentsWalker. We perform the update here without
+     * having to care about the query, the pagination, ...
+     */
     protected class DocumentsCallbackImpl implements DocumentsCallback {
 
         long pageCount = 0;
@@ -158,6 +190,9 @@ public class UpdateAllDates {
 
     }
 
+    /*
+     * Main entry point
+     */
     public void run(boolean inDisableListeners) {
 
         if (diffInDays < 1) {
@@ -185,9 +220,43 @@ public class UpdateAllDates {
                     Type t = field.getType();
                     if (t.isSimpleType() || t.isListType()) {
                         String typeName = ToolsMisc.getCoreFieldType(t);
+                        // If ToolsMisc.getCoreFieldType() could find a "date"
+                        // core type, we know the field is not complex or
+                        // complex-multivalued => We can handle it.
+                        //
+                        // If it does not return "date", we will check complex
+                        // types in the else clauses
                         if (typeName.equals("date")) {
                             fieldsInfo.add(new FieldInfo("" + field.getName(),
                                     t.isListType()));
+                        } else if (t.isListType()) {
+                            System.out.println("" + field.getName());
+                            // Check if complex-multivalued
+                            ListType lt = (ListType) t;
+                            Type subType = ((ListType) t).getFieldType();
+                            if (subType.isComplexType()) {
+                                ComplexType ct = (ComplexType) subType;
+                                Map<String, String> subFieldsXPathsAndTypes = ToolsMisc.getComplexFieldSubFieldsInfo(
+                                        ct, field.getName().getPrefixedName());
+                                for (String oneXPath : subFieldsXPathsAndTypes.keySet()) {
+                                    if (subFieldsXPathsAndTypes.get(oneXPath).equals(
+                                            "date")) {
+                                        fieldsInfo.add(new FieldInfo(oneXPath,
+                                                true, true));
+                                    }
+                                }
+                            }
+                        }
+                    } else if (t.isComplexType()) {
+                        ComplexType ct = (ComplexType) t;
+                        Map<String, String> subFieldsXPathsAndTypes = ToolsMisc.getComplexFieldSubFieldsInfo(
+                                ct, field.getName().getPrefixedName());
+                        for (String oneXPath : subFieldsXPathsAndTypes.keySet()) {
+                            if (subFieldsXPathsAndTypes.get(oneXPath).equals(
+                                    "date")) {
+                                fieldsInfo.add(new FieldInfo(oneXPath, false,
+                                        true));
+                            }
                         }
                     }
                 }
@@ -198,7 +267,7 @@ public class UpdateAllDates {
                 String nxql = "SELECT * FROM " + dt.getName();
 
                 DocumentModelList docs = session.query(nxql, 1);
-                if(docs.size() == 0) {
+                if (docs.size() == 0) {
                     continue;
                 }
 
@@ -316,20 +385,25 @@ public class UpdateAllDates {
 
     protected void updateDate(DocumentModel inDoc, FieldInfo inInfo) {
 
-        if (inInfo.getIsList()) {
-            Calendar[] dates = (Calendar[]) inDoc.getPropertyValue(inInfo.getXPath());
-            if(dates != null && dates.length > 0) {
-                for(Calendar d : dates) {
-                    d.add(Calendar.DATE, diffInDays);
-                }
-                inDoc.setPropertyValue(inInfo.getXPath(), dates);
-            }
-        } else {
+        if (inInfo.isSimple()) {
             Calendar d = (Calendar) inDoc.getPropertyValue(inInfo.getXPath());
             if (d != null) {
                 d.add(Calendar.DATE, diffInDays);
                 inDoc.setPropertyValue(inInfo.getXPath(), d);
             }
+        } else if (inInfo.isList() && !inInfo.isComplex()) {
+            Calendar[] dates = (Calendar[]) inDoc.getPropertyValue(inInfo.getXPath());
+            if (dates != null && dates.length > 0) {
+                for (Calendar d : dates) {
+                    d.add(Calendar.DATE, diffInDays);
+                }
+                inDoc.setPropertyValue(inInfo.getXPath(), dates);
+            }
+        } else if (inInfo.isList() && inInfo.isComplex()) {
+            // To be done
+
+        } else if (inInfo.isComplex()) {
+            // To be done
         }
     }
 

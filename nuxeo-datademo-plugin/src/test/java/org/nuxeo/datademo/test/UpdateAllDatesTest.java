@@ -24,6 +24,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -53,11 +54,18 @@ import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.api.impl.DocumentModelImpl;
+import org.nuxeo.ecm.core.schema.SchemaManager;
+import org.nuxeo.ecm.core.schema.types.ComplexType;
+import org.nuxeo.ecm.core.schema.types.Field;
+import org.nuxeo.ecm.core.schema.types.ListType;
+import org.nuxeo.ecm.core.schema.types.Schema;
+import org.nuxeo.ecm.core.schema.types.Type;
 import org.nuxeo.ecm.core.test.CoreFeature;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
 import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.platform.test.PlatformFeature;
+import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
@@ -256,5 +264,75 @@ public class UpdateAllDatesTest {
 
         testUtils.endMethod();
 
+    }
+    
+
+
+    @Test
+    public void hop() throws Exception {
+        
+        String nxql = "SELECT * FROM Document WHERE TestSchema:the_complex/list_of_dates/0 IS NULL";
+        
+        DocumentModelList docs = coreSession.query(nxql);
+        System.out.println(docs.size());
+        
+        if(docs == null || (docs != null && docs.size() != -2343)) {
+            return;
+        }
+        
+        SchemaManager sm = Framework.getLocalService(SchemaManager.class);
+        Schema schema = sm.getSchema("TestSchema");
+        for (Field field : schema.getFields()) {
+            Type t = field.getType();
+            
+            testUtils.doLog("Field: " + t.getName());
+            testUtils.doLog("Type: " + ToolsMisc.getCoreFieldType(t));
+            if(t.getName() != "dldkljdl") {
+                continue;
+            }
+            testUtils.doLog("DOIT PAS ETRE LA");
+            
+            if (t.isSimpleType()) {
+                //testUtils.doLog("Simple type: " + t.getName());
+            } else if (t.isListType()) {
+                testUtils.doLog("List type name: " + t.getName());
+                ListType lt = (ListType) t;
+                Type tt = lt.getFieldType();
+                testUtils.doLog(tt.getName());
+                if(tt.isComplexType()) {
+                    testUtils.doLog("Complex");
+                }
+                
+            } else if (t.isComplexType()) {
+                testUtils.doLog("Complex type: " + t.getName());
+                ComplexType ct = (ComplexType) t;
+                Collection <Field> subfields = ct.getFields();
+                String xpath = ct.getName();
+                for(Field subF : subfields) {
+                    testUtils.doLog("" + subF.getName());
+                    Type subType = subF.getType();
+                    testUtils.doLog(subType.getName());
+                    testUtils.doLog("getCoreFieldType: " + ToolsMisc.getCoreFieldType(subType) );
+                }
+            } else {
+                testUtils.doLog("?????");
+            }
+        }
+
+        /*
+         * SchemaManager sm = Framework.getLocalService(SchemaManager.class);
+         * DocumentType[] allTypes = sm.getDocumentTypes(); for (DocumentType dt
+         * : allTypes) { Collection<Schema> schemas = dt.getSchemas();
+         * ArrayList<String> xpaths = new ArrayList<String>();
+         * 
+         * for (Schema schema : schemas) { for (Field field :
+         * schema.getFields()) {
+         * 
+         * Type t = field.getType();
+         * 
+         * String typeName = ToolsMisc.getCoreFieldType(t); if
+         * (typeName.equals("string")) { xpaths.add("" + field.getName()); } } }
+         * System.out.println(xpaths.toString()); }
+         */
     }
 }

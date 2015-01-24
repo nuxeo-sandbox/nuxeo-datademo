@@ -18,6 +18,8 @@ package org.nuxeo.datademo.tools;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -25,6 +27,7 @@ import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.schema.types.ComplexType;
+import org.nuxeo.ecm.core.schema.types.Field;
 import org.nuxeo.ecm.core.schema.types.ListType;
 import org.nuxeo.ecm.core.schema.types.Type;
 
@@ -172,5 +175,28 @@ public class ToolsMisc {
         }
         
         return "";
+    }
+    
+    public static HashMap<String, String> getComplexFieldSubFieldsInfo(Type inComplex, String inParentXPath) {
+        
+        HashMap<String, String> result = null;
+        
+        if(!inComplex.isComplexType()) {
+            return null;
+        }
+        
+        result = new HashMap<String, String>();
+        ComplexType ct = (ComplexType) inComplex;
+
+        Collection <Field> subfields = ct.getFields();
+        for(Field subF : subfields) {
+            Type subType = subF.getType();
+            String typeName = ToolsMisc.getCoreFieldType(subType);
+            String xpath = inParentXPath + "/" + subF.getName();
+            
+            result.put(xpath, typeName);
+        }
+        
+        return result;
     }
 }
