@@ -84,7 +84,7 @@ public class UpdateAllDatesTest {
     // are declared in doc-type-contrib.xml and test_dates_list.xsd
     protected static final String DOCTYPE_WITH_DATESLIST = "TestDoc";
 
-    protected static final String XPATH_DATES_LIST = "TestSchema:date_list";
+    protected static final String XPATH_DATES_LIST = "TestSchema:list_of_dates_main";
 
     @Inject
     CoreSession coreSession;

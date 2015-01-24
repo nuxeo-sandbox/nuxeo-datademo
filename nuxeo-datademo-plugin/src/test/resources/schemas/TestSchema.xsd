@@ -8,7 +8,7 @@
     <xs:list itemType="xs:date"/>
   </xs:simpleType>
 
-  <xs:element name="my_title" type="xs:string"/>
-  <xs:element name="date_list" type="nxs:dateList"/>
+  <xs:element name="main_string" type="xs:string"/>
+  <xs:element name="list_of_dates_main" type="nxs:dateList"/>
 
 </xs:schema>
