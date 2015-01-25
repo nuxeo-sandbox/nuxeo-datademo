@@ -350,7 +350,7 @@ public class UpdateAllDatesTest {
     }
 
     @Test
-    public void testUpdateAlDates_ListOfComplexWithDates() throws Exception {
+    public void testUpdateAlDates_ListOfComplexWithSimpleDateField() throws Exception {
 
         testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
