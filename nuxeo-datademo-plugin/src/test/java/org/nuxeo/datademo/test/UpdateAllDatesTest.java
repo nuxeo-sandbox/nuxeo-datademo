@@ -54,6 +54,7 @@ import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.api.impl.DocumentModelImpl;
+import org.nuxeo.ecm.core.api.model.Property;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.schema.types.ComplexType;
 import org.nuxeo.ecm.core.schema.types.Field;
@@ -93,7 +94,7 @@ public class UpdateAllDatesTest {
     protected static final String DOCTYPE_TEST_DOC = "TestDoc";
 
     protected static final String XPATH_DATES_LIST = "TestSchema:list_of_dates_main";
-    
+
     protected static final String XPATH_COMPLEX_DATEFIELD = "TestSchema:the_complex/one_date";
 
     @Inject
@@ -145,6 +146,8 @@ public class UpdateAllDatesTest {
             testUtils.createDocument("File", "doc-" + i, true);
             if ((i % 50) == 0) {
                 coreSession.save();
+                TransactionHelper.commitOrRollbackTransaction();
+                TransactionHelper.startTransaction();
             }
         }
         coreSession.save();
@@ -197,11 +200,11 @@ public class UpdateAllDatesTest {
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
 
-        testUtils.doLog("Creating " + NUMBER_OF_DOCS + " '"
-                + DOCTYPE_TEST_DOC + "'");
+        testUtils.doLog("Creating " + NUMBER_OF_DOCS + " '" + DOCTYPE_TEST_DOC
+                + "'");
         for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
-            DocumentModel doc = testUtils.createDocument(
-                    DOCTYPE_TEST_DOC, "doc-with-datesList-" + i, false);
+            DocumentModel doc = testUtils.createDocument(DOCTYPE_TEST_DOC,
+                    "doc-with-datesList-" + i, false);
 
             int count = ToolsMisc.randomInt(1, 5);
             Calendar[] dates = RandomDates.buildDates(count, null,
@@ -211,13 +214,15 @@ public class UpdateAllDatesTest {
             doc = coreSession.saveDocument(doc);
             if ((i % 50) == 0) {
                 coreSession.save();
+                TransactionHelper.commitOrRollbackTransaction();
+                TransactionHelper.startTransaction();
             }
         }
         // We also want some null fields
         NUMBER_OF_DOCS += 6;
         for (int i = 1; i < 6; i++) {
-            testUtils.createDocument(DOCTYPE_TEST_DOC,
-                    "doc-with-datesList-" + i, true);
+            testUtils.createDocument(DOCTYPE_TEST_DOC, "doc-with-datesList-"
+                    + i, true);
         }
         coreSession.save();
         TransactionHelper.commitOrRollbackTransaction();
@@ -254,11 +259,11 @@ public class UpdateAllDatesTest {
             // We did not save null values in originalIDsAndMS
             assertNotNull(c);
             assertNotNull(originalMS);
-            
+
             int length = c.length;
             assertEquals(length, originalMS.length);
-            
-            for(int i = 0; i < length; i++) {
+
+            for (int i = 0; i < length; i++) {
                 long diff = c[i].getTimeInMillis() - originalMS[i].longValue();
                 assertEquals(NUMBER_OF_MILLISECONDS, diff);
             }
@@ -284,11 +289,11 @@ public class UpdateAllDatesTest {
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
 
-        testUtils.doLog("Creating " + NUMBER_OF_DOCS + " '"
-                + DOCTYPE_TEST_DOC + "'");
+        testUtils.doLog("Creating " + NUMBER_OF_DOCS + " '" + DOCTYPE_TEST_DOC
+                + "'");
         for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
-            DocumentModel doc = testUtils.createDocument(
-                    DOCTYPE_TEST_DOC, "doc-complex-simple-date-" + i, false);
+            DocumentModel doc = testUtils.createDocument(DOCTYPE_TEST_DOC,
+                    "doc-complex-simple-date-" + i, false);
 
             Calendar c = RandomDates.buildDate(null, 4, 10, false);
             doc.setPropertyValue(XPATH_COMPLEX_DATEFIELD, c);
@@ -296,6 +301,8 @@ public class UpdateAllDatesTest {
             doc = coreSession.saveDocument(doc);
             if ((i % 50) == 0) {
                 coreSession.save();
+                TransactionHelper.commitOrRollbackTransaction();
+                TransactionHelper.startTransaction();
             }
         }
         coreSession.save();
@@ -327,7 +334,7 @@ public class UpdateAllDatesTest {
             Calendar c = (Calendar) doc.getPropertyValue(XPATH_COMPLEX_DATEFIELD);
             long ms = c.getTimeInMillis();
             long originalMS = originalIDsAndMS.get(id);
-            
+
             assertEquals(NUMBER_OF_MILLISECONDS, ms - originalMS);
         }
 
@@ -336,85 +343,136 @@ public class UpdateAllDatesTest {
     }
     
     @Test
-    public void hop() throws Exception {
+    public void testUpdateAlDates_ListOfComplexWithDates() throws Exception {
+
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
+
+        int NUMBER_OF_DOCS = 50;
+        int NUMBER_OF_DOCS_TO_CHECK = 10;
+        int NUMBER_OF_DAYS = 4;
+        long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;
+
+        assertTrue(NUMBER_OF_DOCS_TO_CHECK < NUMBER_OF_DOCS);
+
+        // ==========> Create the documents <==========
+        TransactionHelper.commitOrRollbackTransaction();
+        TransactionHelper.startTransaction();
+
+        testUtils.doLog("Creating " + NUMBER_OF_DOCS + " '" + DOCTYPE_TEST_DOC
+                + "'");
+        for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
+            DocumentModel doc = testUtils.createDocument(DOCTYPE_TEST_DOC,
+                    "doc-complex-list-" + i, false);
+            
+            // No random here, we always create 3 complex
+            for(int j = 0; j < 3; j++) {
+                Property complexMeta = doc.getProperty("TestSchema:the_complex_multivalued");
+                ListType ltype = (ListType) complexMeta.getField().getType();
+                //assertTrue(ltype.getFieldType().isComplexType());
+                HashMap<String, Serializable> oneEntry = new HashMap<String, Serializable>();
+                Calendar c = RandomDates.buildDate(null, 4, 10, false);
+                oneEntry.put("one_date_2", c);
+                complexMeta.addValue(oneEntry);
+            }
+
+            doc = coreSession.saveDocument(doc);
+            if ((i % 50) == 0) {
+                coreSession.save();
+                TransactionHelper.commitOrRollbackTransaction();
+                TransactionHelper.startTransaction();
+            }
+            
+        }
+        coreSession.save();
+        TransactionHelper.commitOrRollbackTransaction();
+        TransactionHelper.startTransaction();
         
+        DocumentModelList docs = coreSession.query("SELECT * FROM Document WHERE TestSchema:the_complex_multivalued/*/one_date_2 IS NOT NULL");
+        System.out.println(docs.size());
+
+        testUtils.endMethod();
+        
+    }
+
+    /*
+     * COMPLEX AND MULTIVALUED: TestSchema:the_complex_multivalued
+     * TestSchema:the_complex_multivalued/list_of_dates_2: date
+     * TestSchema:the_complex_multivalued/one_date_2: date
+     * 
+     * COMPLEX: TestSchema:the_complex
+     * 
+     * TestSchema:the_complex/one_date: date
+     * TestSchema:the_complex/list_of_dates: date
+     * 
+     * TestSchema:list_of_dates_main
+     */
+
+    @Ignore
+    @Test
+    public void quickTests() throws Exception {
 
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
-        DocumentModel doc = testUtils.createDocument(
-                DOCTYPE_TEST_DOC, "doc-complex-simple-date-" + 8989, true);
+        DocumentModel doc = testUtils.createDocument(DOCTYPE_TEST_DOC,
+                "doc-complex-simple-date-" + 8989, true);
         coreSession.save();
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
 
-        //String nxql = "SELECT * FROM Document WHERE TestSchema:the_complex/list_of_dates/0 IS NULL";
+        // String nxql =
+        // "SELECT * FROM Document WHERE TestSchema:the_complex/list_of_dates/0 IS NULL";
         String nxql = "SELECT * FROM " + DOCTYPE_TEST_DOC;
         DocumentModelList docs = coreSession.query(nxql);
         DocumentModel zedoc = docs.get(0);
-        
-        //Marche pas: "TestSchema:the_complex_multivalued/0/list_of_dates_2";
-      //Marche pas: "TestSchema:the_complex_multivalued/0/list_of_dates_2/0";
+
+        // Marche pas: "TestSchema:the_complex_multivalued/0/list_of_dates_2";
+        // Marche pas: "TestSchema:the_complex_multivalued/0/list_of_dates_2/0";
         String zez = "TestSchema:the_complex_multivalued";
         Object o = zedoc.getPropertyValue(zez);
-        
-        if(docs == null || (docs != null && docs.size() != -2343)) {
+
+        if (docs == null || (docs != null && docs.size() != -2343)) {
             return;
         }
         // ==============================================================
-        
+
         SchemaManager sm = Framework.getLocalService(SchemaManager.class);
         Schema schema = sm.getSchema("TestSchema");
         for (Field field : schema.getFields()) {
             Type t = field.getType();
-            
+
             testUtils.doLog("Field: " + t.getName());
             testUtils.doLog("Type: " + ToolsMisc.getCoreFieldType(t));
-            if(t.getName() != "dldkljdl") {
+            if (t.getName() != "dldkljdl") {
                 continue;
             }
             testUtils.doLog("DOIT PAS ETRE LA");
-            
+
             if (t.isSimpleType()) {
-                //testUtils.doLog("Simple type: " + t.getName());
+                // testUtils.doLog("Simple type: " + t.getName());
             } else if (t.isListType()) {
                 testUtils.doLog("List type name: " + t.getName());
                 ListType lt = (ListType) t;
                 Type tt = lt.getFieldType();
                 testUtils.doLog(tt.getName());
-                if(tt.isComplexType()) {
+                if (tt.isComplexType()) {
                     testUtils.doLog("Complex");
                 }
-                
+
             } else if (t.isComplexType()) {
                 testUtils.doLog("Complex type: " + t.getName());
                 ComplexType ct = (ComplexType) t;
-                Collection <Field> subfields = ct.getFields();
+                Collection<Field> subfields = ct.getFields();
                 String xpath = ct.getName();
-                for(Field subF : subfields) {
+                for (Field subF : subfields) {
                     testUtils.doLog("" + subF.getName());
                     Type subType = subF.getType();
                     testUtils.doLog(subType.getName());
-                    testUtils.doLog("getCoreFieldType: " + ToolsMisc.getCoreFieldType(subType) );
+                    testUtils.doLog("getCoreFieldType: "
+                            + ToolsMisc.getCoreFieldType(subType));
                 }
             } else {
                 testUtils.doLog("?????");
             }
         }
-
-        /*
-         * SchemaManager sm = Framework.getLocalService(SchemaManager.class);
-         * DocumentType[] allTypes = sm.getDocumentTypes(); for (DocumentType dt
-         * : allTypes) { Collection<Schema> schemas = dt.getSchemas();
-         * ArrayList<String> xpaths = new ArrayList<String>();
-         * 
-         * for (Schema schema : schemas) { for (Field field :
-         * schema.getFields()) {
-         * 
-         * Type t = field.getType();
-         * 
-         * String typeName = ToolsMisc.getCoreFieldType(t); if
-         * (typeName.equals("string")) { xpaths.add("" + field.getName()); } } }
-         * System.out.println(xpaths.toString()); }
-         */
     }
 }
