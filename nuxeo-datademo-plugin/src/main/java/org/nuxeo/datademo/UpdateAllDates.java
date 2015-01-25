@@ -31,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 import org.nuxeo.datademo.tools.DocumentsCallback;
 import org.nuxeo.datademo.tools.DocumentsWalker;
 import org.nuxeo.datademo.tools.ToolsMisc;
+import org.nuxeo.datademo.tools.XPathFieldInfo;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
@@ -103,75 +104,6 @@ public class UpdateAllDates {
     }
 
     /*
-     * Utility class used at the time the date is updated for a document. It
-     * tells what kind of field we have (simple, list, complex)
-     */
-    protected class FieldInfo {
-        private String xpath;
-
-        private boolean isList;
-
-        private String complexListParentXPath;
-
-        private String subFieldName;
-
-        public FieldInfo(String inXPath) {
-            this(inXPath, false, "");
-        }
-
-        public FieldInfo(String inXPath, boolean inIsList) {
-            this(inXPath, inIsList, "");
-        }
-
-        public FieldInfo(String inXPath, boolean inIsList,
-                String inComplexListParentXPath) {
-            xpath = inXPath;
-            isList = inIsList;
-            complexListParentXPath = inComplexListParentXPath;
-            if (complexListParentXPath != null
-                    && !complexListParentXPath.isEmpty()) {
-                subFieldName = xpath.replace(complexListParentXPath + "/", "");
-            }
-        }
-
-        public String getXPath() {
-            return xpath;
-        }
-
-        public boolean isSimple() {
-            return !isList;
-        }
-
-        public boolean isList() {
-            return isList;
-        }
-
-        public String getComplexListParentXPath() {
-            return complexListParentXPath;
-        }
-
-        public String getSubFieldName() {
-            return subFieldName;
-        }
-
-        public String toString() {
-            String str = xpath;
-
-            if (isList) {
-                str += "/List";
-            } else {
-                str += "/Simple";
-            }
-
-            if (!complexListParentXPath.isEmpty()) {
-                str += "/" + complexListParentXPath;
-            }
-
-            return str;
-        }
-    }
-
-    /*
      * The callback for the DocumentsWalker. We perform the update here without
      * having to care about the query, the pagination, ...
      */
@@ -181,9 +113,9 @@ public class UpdateAllDates {
 
         long documentCount = 0;
 
-        ArrayList<FieldInfo> fieldInfos;
+        ArrayList<XPathFieldInfo> fieldInfos;
 
-        protected DocumentsCallbackImpl(ArrayList<FieldInfo> inFieldsInfo) {
+        protected DocumentsCallbackImpl(ArrayList<XPathFieldInfo> inFieldsInfo) {
             fieldInfos = inFieldsInfo;
         }
 
@@ -239,7 +171,7 @@ public class UpdateAllDates {
         DocumentType[] allTypes = sm.getDocumentTypes();
         for (DocumentType dt : allTypes) {
             Collection<Schema> schemas = dt.getSchemas();
-            ArrayList<FieldInfo> fieldsInfo = new ArrayList<FieldInfo>();
+            ArrayList<XPathFieldInfo> fieldsInfo = new ArrayList<XPathFieldInfo>();
 
             for (Schema schema : schemas) {
                 for (Field field : schema.getFields()) {
@@ -253,8 +185,8 @@ public class UpdateAllDates {
                         // If it does not return "date", we will check complex
                         // types in the else clauses
                         if (typeName.equals("date")) {
-                            fieldsInfo.add(new FieldInfo("" + field.getName(),
-                                    t.isListType()));
+                            fieldsInfo.add(new XPathFieldInfo("" + field.getName(),
+                                    t.isListType(), "date"));
                         } else if (t.isListType()) {
 
                             // Check if complex-multivalued
@@ -267,22 +199,22 @@ public class UpdateAllDates {
                                 for (String oneXPath : subFieldsXPathsAndTypes.keySet()) {
                                     if (subFieldsXPathsAndTypes.get(oneXPath).equals(
                                             "date")) {
-                                        fieldsInfo.add(new FieldInfo(oneXPath,
-                                                true, parentXPath));
+                                        XPathFieldInfo xpfi = new XPathFieldInfo(oneXPath, true, "date");
+                                        xpfi.setComplexListParentXPath(parentXPath);
+                                        fieldsInfo.add(xpfi);
                                     }
                                 }
                             }
                         }
                     } else if (t.isComplexType()) {
                         ComplexType ct = (ComplexType) t;
-                        String parentXPath = field.getName().getPrefixedName();
                         Map<String, String[]> subFieldsXPathsAndTypes = ToolsMisc.getComplexFieldSubFieldsInfoPro(
                                 ct, field.getName().getPrefixedName());
                         for (String oneXPath : subFieldsXPathsAndTypes.keySet()) {
                             String[] subInfos = subFieldsXPathsAndTypes.get(oneXPath);
                             if (subInfos[0].equals("date")) {
-                                fieldsInfo.add(new FieldInfo(oneXPath,
-                                        subInfos[1].equals("1")));
+                                fieldsInfo.add(new XPathFieldInfo(oneXPath,
+                                        subInfos[1].equals("1"), "date"));
                             }
                         }
                     }
@@ -373,12 +305,12 @@ public class UpdateAllDates {
      * No control/check if the document has the correct schema.
      * 
      * @param inDocs
-     * @param inXPaths
+     * @param inFieldsInfo
      *
      * @since 7.2
      */
     protected void updateDocs(List<DocumentModel> inDocs,
-            ArrayList<FieldInfo> inFieldsInfo) {
+            ArrayList<XPathFieldInfo> inFieldsInfo) {
 
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
@@ -386,7 +318,7 @@ public class UpdateAllDates {
         int count = 0;
         for (DocumentModel oneDoc : inDocs) {
 
-            for (FieldInfo oneInfo : inFieldsInfo) {
+            for (XPathFieldInfo oneInfo : inFieldsInfo) {
                 updateDate(oneDoc, oneInfo);
             }
             oneDoc = session.saveDocument(oneDoc);
@@ -420,7 +352,10 @@ public class UpdateAllDates {
         }
     }
 
-    protected void updateDate(DocumentModel inDoc, FieldInfo inInfo) {
+    /*
+     * We know we handle only dates. No need to check inInfo.getCoreTypeName()
+     */
+    protected void updateDate(DocumentModel inDoc, XPathFieldInfo inInfo) {
 
         if (inInfo.isSimple()) {
             if (inInfo.getXPath().equals("TestSchema:the_complex/list_of_dates")) {
@@ -435,19 +370,13 @@ public class UpdateAllDates {
             String complexParentXPath = inInfo.getComplexListParentXPath();
             String subFieldName = inInfo.getSubFieldName();
             if (complexParentXPath != null && !complexParentXPath.isEmpty()) {
-
-                // ArrayList<Serializable> values = (ArrayList<Serializable>)
-                // inDoc.getPropertyValue(complexParentXPath);
-                if(complexParentXPath.startsWith("Test")) {
-                    String oucou = "";
-                }
                 Serializable values = inDoc.getPropertyValue(complexParentXPath);
                 if (values != null) {
                     int length = 0;
                     if (values instanceof ArrayList) {
-                        length = ((ArrayList) values).size();
+                        length = ((ArrayList<?>) values).size();
                     } else if (values instanceof HashMap) {
-                        length = ((HashMap) values).size();
+                        length = ((HashMap<?, ?>) values).size();
                     } else if (values instanceof Object[]) {
                         length = ((Object[]) values).length;
                     }
