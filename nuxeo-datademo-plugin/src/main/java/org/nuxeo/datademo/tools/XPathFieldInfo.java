@@ -100,6 +100,10 @@ public class XPathFieldInfo {
     public boolean isList() {
         return isList;
     }
+    
+    public boolean isInComplexField() {
+        return complexListParentXPath != null && !complexListParentXPath.isEmpty();
+    }
 
     public String getComplexListParentXPath() {
         return complexListParentXPath;
@@ -107,6 +111,7 @@ public class XPathFieldInfo {
 
     public void setComplexListParentXPath(String inValue) {
         complexListParentXPath = inValue;
+        updateSubFieldName();
     }
 
     public String getSubFieldName() {

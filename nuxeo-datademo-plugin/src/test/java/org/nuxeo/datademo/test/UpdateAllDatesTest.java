@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
@@ -96,6 +97,12 @@ public class UpdateAllDatesTest {
     protected static final String XPATH_DATES_LIST = "TestSchema:list_of_dates_main";
 
     protected static final String XPATH_COMPLEX_DATEFIELD = "TestSchema:the_complex/one_date";
+
+    protected static final String XPATH_COMPLEX_MULTIVALUED = "TestSchema:the_complex_multivalued";
+    
+    protected static final String COMPLEX_MULTIVALUED_SIMPLE_DATE_FIELD = "one_date_2";
+    
+    protected static final String COMPLEX_MULTIVALUED_DATELIST_FIELD = "list_of_dates_2";
 
     @Inject
     CoreSession coreSession;
@@ -341,20 +348,28 @@ public class UpdateAllDatesTest {
         testUtils.endMethod();
 
     }
-    
+
     @Test
     public void testUpdateAlDates_ListOfComplexWithDates() throws Exception {
 
         testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
-        int NUMBER_OF_DOCS = 50;
-        int NUMBER_OF_DOCS_TO_CHECK = 10;
+        /*
+         * Other tests check UpdateAllDates can handle thousand(s) of documents.
+         * For this one, let's keep it simple, create 20, store all values in
+         * memory for check-after-update
+         */
+        int NUMBER_OF_DOCS = 20;
         int NUMBER_OF_DAYS = 4;
         long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;
 
-        assertTrue(NUMBER_OF_DOCS_TO_CHECK < NUMBER_OF_DOCS);
+        // No random here, we always create 3 complex
+        int NUMBER_OF_COMPLEX_ENTRIES = 3;
 
-        // ==========> Create the documents <==========
+        HashMap<String, Long[]> originalIDsAndMS = new HashMap<String, Long[]>();
+
+        // ==========> Create the documents, Save values for later checking
+        // <==========
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
 
@@ -363,17 +378,21 @@ public class UpdateAllDatesTest {
         for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
             DocumentModel doc = testUtils.createDocument(DOCTYPE_TEST_DOC,
                     "doc-complex-list-" + i, false);
-            
-            // No random here, we always create 3 complex
-            for(int j = 0; j < 3; j++) {
-                Property complexMeta = doc.getProperty("TestSchema:the_complex_multivalued");
+
+            // Setup the complex-multivalued property. This is done passing an
+            // Array of Map<String, Serializable>, where the key if the name of
+            // the field (short name, no prefix)
+            Long[] ms = new Long[NUMBER_OF_COMPLEX_ENTRIES];
+            for (int j = 0; j < NUMBER_OF_COMPLEX_ENTRIES; j++) {
+                Property complexMeta = doc.getProperty(XPATH_COMPLEX_MULTIVALUED);
                 ListType ltype = (ListType) complexMeta.getField().getType();
-                //assertTrue(ltype.getFieldType().isComplexType());
                 HashMap<String, Serializable> oneEntry = new HashMap<String, Serializable>();
                 Calendar c = RandomDates.buildDate(null, 4, 10, false);
-                oneEntry.put("one_date_2", c);
+                ms[j] = c.getTimeInMillis();
+                oneEntry.put(COMPLEX_MULTIVALUED_SIMPLE_DATE_FIELD, c);
                 complexMeta.addValue(oneEntry);
             }
+            originalIDsAndMS.put(doc.getId(), ms);
 
             doc = coreSession.saveDocument(doc);
             if ((i % 50) == 0) {
@@ -381,17 +400,40 @@ public class UpdateAllDatesTest {
                 TransactionHelper.commitOrRollbackTransaction();
                 TransactionHelper.startTransaction();
             }
-            
+
         }
         coreSession.save();
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
-        
-        DocumentModelList docs = coreSession.query("SELECT * FROM Document WHERE TestSchema:the_complex_multivalued/*/one_date_2 IS NOT NULL");
-        System.out.println(docs.size());
+
+        // DocumentModelList docs =
+        // coreSession.query("SELECT * FROM Document WHERE TestSchema:the_complex_multivalued/*/one_date_2 IS NOT NULL");
+        // System.out.println(docs.size());
+
+        // ==========> Update all docs <==========
+        UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
+        ual.run(true);
+
+        // ==========> Check new dates <==========
+        for (String id : originalIDsAndMS.keySet()) {
+            Long[] originalMS = originalIDsAndMS.get(id);
+            DocumentModel doc = coreSession.getDocument(new IdRef(id));
+            // We get an array of Complex values, which means an array of
+            // Map<String, Serializable> where the String is the name of the
+            // field
+            ArrayList<Map<String, Serializable>> values = (ArrayList<Map<String, Serializable>>) doc.getPropertyValue(XPATH_COMPLEX_MULTIVALUED);
+            assertNotNull(values);
+            assertEquals(NUMBER_OF_COMPLEX_ENTRIES, values.size());
+            for(int i = 0; i < NUMBER_OF_COMPLEX_ENTRIES; i++) {
+                Map<String, Serializable> oneEntry = values.get(i);
+                Calendar c = (Calendar) oneEntry.get(COMPLEX_MULTIVALUED_SIMPLE_DATE_FIELD);
+                assertNotNull(c);
+                assertEquals(NUMBER_OF_MILLISECONDS, c.getTimeInMillis() - originalMS[i]);
+            }
+        }
 
         testUtils.endMethod();
-        
+
     }
 
     /*
