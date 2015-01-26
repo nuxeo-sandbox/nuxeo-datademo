@@ -41,6 +41,7 @@ import org.nuxeo.datademo.RandomVocabulary;
 import org.nuxeo.datademo.tools.DocumentsCallback;
 import org.nuxeo.datademo.tools.DocumentsWalker;
 import org.nuxeo.datademo.tools.SimpleNXQLDocumentsPageProvider;
+import org.nuxeo.datademo.tools.DocumentsCallback.ReturnStatus;
 import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -106,9 +107,11 @@ public class DocumentsWalkerTest {
         long pageCount = -1; // irrelevant when walking documents one by one
 
         long documentCount = 0;
-
+        
+        ReturnStatus lastReturnStatus;
+        
         @Override
-        public boolean callback(List<DocumentModel> inDocs) {
+        public ReturnStatus callback(List<DocumentModel> inDocs) {
 
             if (pageCount < 0) {
                 pageCount = 0;
@@ -119,17 +122,27 @@ public class DocumentsWalkerTest {
             pageCount += 1;
             documentCount += inDocs.size();
 
-            return true;
+            return ReturnStatus.CONTINUE;
         }
 
         @Override
-        public boolean callback(DocumentModel inDoc) {
+        public ReturnStatus callback(DocumentModel inDoc) {
 
             documentCount += 1;
 
             testUtils.checkUniqueStrings_Add(inDoc.getId());
 
-            return true;
+            return ReturnStatus.CONTINUE;
+        }
+
+        @Override
+        public void init() {
+            //Unused here
+        }
+
+        @Override
+        public void end(ReturnStatus inLastReturnStatus) {
+            lastReturnStatus = inLastReturnStatus;
         }
 
         public long getPageCount() {
@@ -138,6 +151,10 @@ public class DocumentsWalkerTest {
 
         public long getDocumentCount() {
             return documentCount;
+        }
+        
+        public ReturnStatus getLastReturnStatus() {
+            return lastReturnStatus;
         }
 
     }
@@ -166,6 +183,7 @@ public class DocumentsWalkerTest {
         testUtils.checkUniqueStrings_Cleanup();
         assertEquals(EXPECTED_NUMBER_OF_PAGES, cb.getPageCount());
         assertEquals(NUMBER_OF_DOCS, cb.getDocumentCount());
+        assertEquals(ReturnStatus.CONTINUE, cb.getLastReturnStatus());
 
         testUtils.endMethod();
     }
@@ -192,6 +210,7 @@ public class DocumentsWalkerTest {
         dw.runForEachDocument(cb);
         testUtils.checkUniqueStrings_Cleanup();
         assertEquals(NUMBER_OF_DOCS, cb.getDocumentCount());
+        assertEquals(ReturnStatus.CONTINUE, cb.getLastReturnStatus());
 
         testUtils.endMethod();
     }

@@ -27,11 +27,13 @@ import org.nuxeo.runtime.transaction.TransactionHelper;
  * Commit the transaction every n calls (default is 50). Typical usage is:
  * <code>
  * //session is a CoreSession we got previously
- * TransactionInLoop t = new TransactionInLoop(session);
+ * TransactionInLoop til = new TransactionInLoop(session);
+ * til.commitAndStartNewTransaction();
  * for(DocumentModel doc : foundDocs) {
  *     //... do something, update fields, ...
- *     t.saveDocumentAndCommitIfNeeded(doc);
+ *     til.saveDocumentAndCommitIfNeeded(doc);
  * }
+ * til.commitAndStartNewTransaction();
  * </code>
  *
  * @since 7.1
@@ -87,7 +89,7 @@ public class TransactionInLoop {
      *   til.commitAndStartNewTransaction();
      * <pre>
      *
-     * @since TODO
+     * @since 7.2
      */
     public void commitAndStartNewTransaction() {
         TransactionHelper.commitOrRollbackTransaction();
@@ -117,7 +119,7 @@ public class TransactionInLoop {
      * <code>setCunter()</code> you can then also call this method to commit the
      * transaction.
      *
-     * @since TODO
+     * @since 7.2
      */
     public void commitOrRollbackIfNeeded() {
         if ((counter % commitModulo) == commitModulo) {

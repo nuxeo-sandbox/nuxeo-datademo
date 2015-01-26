@@ -32,6 +32,7 @@ import org.nuxeo.datademo.tools.DocumentsCallback;
 import org.nuxeo.datademo.tools.DocumentsWalker;
 import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.datademo.tools.XPathFieldInfo;
+import org.nuxeo.datademo.tools.DocumentsCallback.ReturnStatus;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
@@ -172,22 +173,32 @@ public class UpdateAllDates {
         }
 
         @Override
-        public boolean callback(List<DocumentModel> inDocs) {
+        public ReturnStatus callback(List<DocumentModel> inDocs) {
 
             updateDocs(inDocs, fieldInfos);
 
             pageCount += 1;
             documentCount += inDocs.size();
 
-            return true;
+            return ReturnStatus.CONTINUE;
         }
 
         @Override
-        public boolean callback(DocumentModel inDoc) {
+        public ReturnStatus callback(DocumentModel inDoc) {
 
             // We don't use this one, so make sure we don't try to use it in he
             // future
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void init() {
+            // Nothing special here
+        }
+
+        @Override
+        public void end(ReturnStatus inLastReturnStatusc) {
+            // Nothing special here
         }
 
         public long getPageCount() {

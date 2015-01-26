@@ -27,6 +27,31 @@ import org.nuxeo.ecm.core.api.DocumentModel;
  * @since 7.2
  */
 public interface DocumentsCallback {
+    
+    public enum ReturnStatus {
+        STOP, CONTINUE;
+    }
+
+    /**
+     * Possibly called before performing action on a list of documents
+     * (typically, before doing a query), so the callback can initialize some
+     * values.
+     *
+     * @since 7.2
+     */
+    void init();
+
+    /**
+     * Called after walking a list of documents, so the callback can perform
+     * cleanup if needed.
+     * <p>
+     * <code>inInterruptedByCallback</code> is <code>true</code> if the callback
+     * returned <code>false</code> and walking the list of documents was
+     * interrupted.
+     *
+     * @since 7.2
+     */
+    void end(ReturnStatus inLastReturnStatus);
 
     /**
      * Receives a list of documents. Return true if the caller can continue,
@@ -37,17 +62,16 @@ public interface DocumentsCallback {
      *
      * @since 7.2
      */
-    boolean callback(List<DocumentModel> inDocs);
-
+    ReturnStatus callback(List<DocumentModel> inDocs);
 
     /**
-     * Receives one document. Return true if the caller can continue,
-     * false if not
+     * Receives one document. Return true if the caller can continue, false if
+     * not
      * 
      * @param inDoc
      * @return
      *
      * @since 7.2
      */
-    boolean callback(DocumentModel inDoc);
+    ReturnStatus callback(DocumentModel inDoc);
 }

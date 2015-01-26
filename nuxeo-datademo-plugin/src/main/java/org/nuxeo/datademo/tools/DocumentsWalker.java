@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 
+import org.nuxeo.datademo.tools.DocumentsCallback.ReturnStatus;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
@@ -36,7 +37,7 @@ import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
  * <li>Create class that implements {@link DocumentsCallback}</li>
  * <li>Create a <code>DocumentsWalker</code> with a query (and some other
  * parameters)</li>
- * <li>Possibly, setup some more parameters</li>
+ * <li>Possibly, setup more parameters</li>
  * <li>Then just call the <code>runForEachPage()</code> or
  * <code>runForEachDocument()</code> API</li>
  * </ul>
@@ -74,6 +75,12 @@ public class DocumentsWalker {
         coreQueryPP.setPageSize(inPageSize);
     }
 
+    /**
+     * Reseting the query makes the next call to <code>runForEachPage()</code>/
+     * <code>runForEachDocument()</code> to start over at first page.
+     * 
+     * @since 7.2
+     */
     protected void resetQuery() {
 
         coreQueryPP.setCurrentPageIndex(0);
@@ -92,16 +99,17 @@ public class DocumentsWalker {
      */
     public void runForEachPage(DocumentsCallback inCallback) {
 
-        boolean goOn = true;
+        ReturnStatus status = ReturnStatus.CONTINUE;
 
         resetQuery();
 
+        inCallback.init();
         List<DocumentModel> docs = coreQueryPP.getCurrentPage();
-        while (goOn && docs != null && docs.size() > 0) {
+        while (status == ReturnStatus.CONTINUE && docs != null && docs.size() > 0) {
 
-            goOn = inCallback.callback(docs);
+            status = inCallback.callback(docs);
 
-            if (!goOn) {
+            if (status == ReturnStatus.STOP) {
                 break;
             }
 
@@ -112,14 +120,14 @@ public class DocumentsWalker {
                 docs = null;
             }
         }
+        inCallback.end(status);
     }
-
 
     /**
      * Run the query, then call <code>inCallback</code> with a
-     * <code>DocumentModel</code> for each document of the query result. If
-     * the callback returns <code>false</code>, the method stops walking the
-     * pages and returns.
+     * <code>DocumentModel</code> for each document of the query result. If the
+     * callback returns <code>false</code>, the method stops walking the pages
+     * and returns.
      * 
      * @param inCallback
      *
@@ -127,21 +135,22 @@ public class DocumentsWalker {
      */
     public void runForEachDocument(DocumentsCallback inCallback) {
 
-        boolean goOn = true;
+        ReturnStatus status = ReturnStatus.CONTINUE;
 
         resetQuery();
 
+        inCallback.init();
         List<DocumentModel> docs = coreQueryPP.getCurrentPage();
-        while (goOn && docs != null && docs.size() > 0) {
+        while (status == ReturnStatus.CONTINUE && docs != null && docs.size() > 0) {
 
             for (DocumentModel doc : docs) {
-                goOn = inCallback.callback(doc);
-                if (!goOn) {
+                status = inCallback.callback(doc);
+                if (status == ReturnStatus.STOP) {
                     break;
                 }
             }
 
-            if (!goOn) {
+            if (status == ReturnStatus.STOP) {
                 break;
             }
 
@@ -152,6 +161,7 @@ public class DocumentsWalker {
                 docs = null;
             }
         }
+        inCallback.end(status);
     }
 
 }
