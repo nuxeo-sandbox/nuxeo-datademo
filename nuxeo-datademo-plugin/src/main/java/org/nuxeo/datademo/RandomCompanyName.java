@@ -34,8 +34,8 @@ import org.nuxeo.datademo.tools.ToolsMisc;
  * <b>WARNING</b>
  * <p>
  * The class is thread safe only when at creation/release time. To avoid too
- * many locks when <i>getting</i> a value (<code>getAName()</code>), there is
- * no thread safety, because we assume you, the caller ;->, will make sure you
+ * many locks when <i>getting</i> a value (<code>getAName()</code>), there is no
+ * thread safety, because we assume you, the caller ;->, will make sure you
  * don't try to get a value <i>after</if> having released the instance.
  *
  * @since 7.1
@@ -58,6 +58,11 @@ public class RandomCompanyName {
 
     private static final String LOCK = "RandomCompanyName";
 
+    /**
+     * Private constructor to handle the singleton.
+     * 
+     * @throws IOException
+     */
     private RandomCompanyName() throws IOException {
 
         comps1 = new ArrayList<String>();
@@ -107,7 +112,7 @@ public class RandomCompanyName {
                 }
             }
         }
-        
+
         usageCount += 1;
         return instance;
     }
@@ -137,6 +142,15 @@ public class RandomCompanyName {
         return usageCount;
     }
 
+    /**
+     * Return a company built with 1-3 words. If <code>inElementsCount</code> is
+     * < 1 or > 3, it is reset to 3.
+     * 
+     * @param inElementsCount
+     * @return
+     *
+     * @since 7.2
+     */
     public String getAName(int inElementsCount) {
 
         String name = "";
