@@ -177,7 +177,7 @@ public class UpdateWithRandomDatesAndUsersOp {
         session.saveDocument(inDoc);
 
         saveCounter += 1;
-        if ((saveCounter % 10) == 0) {
+        if ((saveCounter % 50) == 0) {
             TransactionHelper.commitOrRollbackTransaction();
             TransactionHelper.startTransaction(5000);
         }

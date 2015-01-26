@@ -26,7 +26,21 @@ import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 
 /**
- * 
+ * Encapsulation of a {@link CoreQueryDocumentPageProvider} which allows to use
+ * a callback on each page or each document. This makes it easier to use when
+ * querying a lots of documents server-side and pagination will occur by
+ * default.
+ * <p>
+ * The usage is quite simple:
+ * <ul>
+ * <li>Create class that implements {@link DocumentsCallback}</li>
+ * <li>Create a <code>DocumentsWalker</code> with a query (and some other
+ * parameters)</li>
+ * <li>Possibly, setup some more parameters</li>
+ * <li>Then just call the <code>runForEachPage()</code> or
+ * <code>runForEachDocument()</code> API</li>
+ * </ul>
+ * <i>See the unit tests for an example of use)</i>
  *
  * @since 7.2
  */
@@ -36,8 +50,14 @@ public class DocumentsWalker {
 
     CoreQueryDocumentPageProvider coreQueryPP;
 
-    public DocumentsWalker(CoreSession inSession, String inQuery,
-            int inPageSize) {
+    /**
+     * Initialize the underlying <code>CoreQueryDocumentPageProvider</code>
+     * 
+     * @param inSession
+     * @param inQuery
+     * @param inPageSize
+     */
+    public DocumentsWalker(CoreSession inSession, String inQuery, int inPageSize) {
 
         coreQueryPP = new CoreQueryDocumentPageProvider();
         CoreQueryPageProviderDescriptor ppDesc = new CoreQueryPageProviderDescriptor();
@@ -53,28 +73,38 @@ public class DocumentsWalker {
         coreQueryPP.setMaxPageSize(inPageSize);
         coreQueryPP.setPageSize(inPageSize);
     }
-    
+
     protected void resetQuery() {
 
         coreQueryPP.setCurrentPageIndex(0);
         coreQueryPP.setCurrentPageOffset(0);
     }
 
+    /**
+     * Run the query, then call <code>inCallback</code> with a
+     * <code>List<DocumentModel></code> for each page of the query result. If
+     * the callback returns <code>false</code>, the method stops walking the
+     * pages and returns.
+     * 
+     * @param inCallback
+     *
+     * @since 7.2
+     */
     public void runForEachPage(DocumentsCallback inCallback) {
 
         boolean goOn = true;
-        
+
         resetQuery();
-        
+
         List<DocumentModel> docs = coreQueryPP.getCurrentPage();
         while (goOn && docs != null && docs.size() > 0) {
 
             goOn = inCallback.callback(docs);
 
-            if(!goOn) {
+            if (!goOn) {
                 break;
             }
-            
+
             if (coreQueryPP.isNextPageAvailable()) {
                 coreQueryPP.nextPage();
                 docs = coreQueryPP.getCurrentPage();
@@ -84,26 +114,37 @@ public class DocumentsWalker {
         }
     }
 
+
+    /**
+     * Run the query, then call <code>inCallback</code> with a
+     * <code>DocumentModel</code> for each document of the query result. If
+     * the callback returns <code>false</code>, the method stops walking the
+     * pages and returns.
+     * 
+     * @param inCallback
+     *
+     * @since 7.2
+     */
     public void runForEachDocument(DocumentsCallback inCallback) {
 
         boolean goOn = true;
-        
+
         resetQuery();
 
         List<DocumentModel> docs = coreQueryPP.getCurrentPage();
         while (goOn && docs != null && docs.size() > 0) {
 
-            for(DocumentModel doc : docs) {
+            for (DocumentModel doc : docs) {
                 goOn = inCallback.callback(doc);
-                if(!goOn) {
+                if (!goOn) {
                     break;
                 }
             }
 
-            if(!goOn) {
+            if (!goOn) {
                 break;
             }
-            
+
             if (coreQueryPP.isNextPageAvailable()) {
                 coreQueryPP.nextPage();
                 docs = coreQueryPP.getCurrentPage();

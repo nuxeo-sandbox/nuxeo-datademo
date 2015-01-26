@@ -50,9 +50,35 @@ import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 /**
- * 
+ * The main <code>run()</code> method walks all Document types and each schema
+ * to find date fields. It updates all and every date fields, adding some days,
+ * allowing some options (disable listeners, log progress, ...).
+ * <p>
+ * WARNING: In this first version, caller must make sure the update is done with
+ * enough rights, the code is not run in an unrestricted session.
+ * <p>
+ * The following cases are handled:
+ * <ul>
+ * <li>Simple date field (<code>myschema:my_date</code>)</li>
+ * <li>Multivalued (list) date field (<code>myschema:list_of_dates</code>)</li>
+ * <li>In a <i>complex</li> field:
+ * <ul>
+ * <li>Simple date field (<code>myschema:the_complex/sub_date</code>)</li>
+ * <li>Multivalued (list) date field (
+ * <code>myschema:the_complex/sub_list_of_dates</code>)</li>
+ * <li>In a <i>multivalued (list) complex</li> field:
+ * <ul>
+ * <li>Simple date field (<code>myschema:the_complex_list/n/one_date</code>)</li>
+ * <li>Multivalued (list) date field (
+ * <code>myschema:the_complex_list/n/a_list_of_dates</code>)</li>
+ * <li>Where <code>n</code> is the index of an entry in the list of complex
+ * fields.</li>
+ * </ul>
+ * <p>
+ * This means that multiple levels of Comple fields are not handled, only the
+ * first level.
  *
- * @since 7.1
+ * @since 7.2
  */
 public class UpdateAllDates {
 
@@ -86,12 +112,33 @@ public class UpdateAllDates {
 
     protected boolean doLog = true;
 
+    /**
+     * Constructor. Adds <code>inDays</code> to all and every <code>date</code>
+     * field.
+     * <p>
+     * WARNING: In this first version, caller must make sure the update is done
+     * with enough rights, the code is not run in an unrestricted session.
+     * 
+     * @param inSession
+     * @param inDays
+     */
     public UpdateAllDates(CoreSession inSession, int inDays) {
 
         session = inSession;
         diffInDays = inDays;
     }
 
+    /**
+     * Constructor. Calculates the difference between <code>inLastUpdate</code>
+     * and now, and adds the corresponding days to all and every
+     * <code>date</code> field.
+     * <p>
+     * WARNING: In this first version, caller must make sure the update is done
+     * with enough rights, the code is not run in an unrestricted session.
+     * 
+     * @param inSession
+     * @param inLastUpdate
+     */
     public UpdateAllDates(CoreSession inSession, Date inLastUpdate) {
 
         session = inSession;
@@ -105,9 +152,12 @@ public class UpdateAllDates {
         }
     }
 
-    /*
-     * The callback for the DocumentsWalker. We perform the update here without
-     * having to care about the query, the pagination, ...
+    /**
+     * This is the callback for the DocumentsWalker. We perform the update in
+     * this callback without having to care about the query, the pagination, ...
+     * 
+     *
+     * @since 7.2
      */
     protected class DocumentsCallbackImpl implements DocumentsCallback {
 
@@ -150,8 +200,21 @@ public class UpdateAllDates {
 
     }
 
-    /*
-     * Main entry point
+    /**
+     * Main entry point. Check all document types and their schemas, then update
+     * all dates.
+     * <p>
+     * If <code>inDisableListeners</code> is <code>true</code>, all and every
+     * listeners are disabled during the update, and re-enabled after the update
+     * (actually, only the listeners that were enabled are re-enabled. If a
+     * lister was disabled, it stays disabled)
+     * <p>
+     * WARNING: In this first version, caller must make sure the update is done
+     * with enough rights, the code is not run in an unrestricted session.
+     * 
+     * @param inDisableListeners
+     *
+     * @since 7.2
      */
     public void run(boolean inDisableListeners) {
 
@@ -303,7 +366,10 @@ public class UpdateAllDates {
     }
 
     /**
-     * Update all date fields whose xpaths are passed in <code>inXPaths</code>.
+     * Update all date fields whose xpaths are encapsulated in
+     * <code>inFieldsInfo</code>, handling all cases: simple field, list fields,
+     * simple field in a complex, list field in a complex, simple field in a
+     * list of complex, list field in a list of complex.
      * <p>
      * No control/check if the document has the correct schema.
      * 
@@ -345,8 +411,13 @@ public class UpdateAllDates {
 
     }
 
-    /*
+    /**
      * Simple utility, when same code is used more than once
+     * 
+     * @param inDoc
+     * @param inXPath
+     *
+     * @since TODO
      */
     protected void updateListOfDates(DocumentModel inDoc, String inXPath) {
         Calendar[] dates = (Calendar[]) inDoc.getPropertyValue(inXPath);
