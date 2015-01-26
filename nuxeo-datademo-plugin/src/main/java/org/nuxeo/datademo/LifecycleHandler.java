@@ -24,6 +24,7 @@ import java.util.HashMap;
 import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.datademo.tools.TransactionInLoop;
 import org.nuxeo.ecm.core.api.ClientException;
+import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
 
@@ -121,16 +122,19 @@ public class LifecycleHandler {
      *
      * @param inDocs
      *
-     * @since TODO
+     * @since 7.2
      */
-    public void moveToRandomState(DocumentModelList inDocs) {
+    public void moveToRandomState(CoreSession inSession,
+            DocumentModelList inDocs) {
 
-        TransactionInLoop til = new TransactionInLoop();
-        int count = 0;
+        TransactionInLoop til = new TransactionInLoop(inSession);
+        til.commitAndStartNewTransaction();
         for (DocumentModel oneDoc : inDocs) {
             moveToRandomState(oneDoc);
+            til.incrementCounter();
             til.commitOrRollbackIfNeeded();
         }
+        til.commitAndStartNewTransaction();
     }
 
     /**
@@ -148,18 +152,18 @@ public class LifecycleHandler {
             boolean inIgnoreDelete) {
 
         Collection<String> allowedTransitions = inDoc.getAllowedStateTransitions();
-                
-        //Collection<String> hop = Collections.
-        if(inIgnoreDelete && allowedTransitions.contains("delete")) {
+
+        // Collection<String> hop = Collections.
+        if (inIgnoreDelete && allowedTransitions.contains("delete")) {
             ArrayList<String> tmp = new ArrayList<String>();
-            for(String c : allowedTransitions) {
-                if(!c.equals("delete")) {
+            for (String c : allowedTransitions) {
+                if (!c.equals("delete")) {
                     tmp.add(c);
                 }
             }
             allowedTransitions = java.util.Collections.unmodifiableCollection(tmp);
         }
-        
+
         if (allowedTransitions.size() < 1) {
             return inDoc;
         }
@@ -187,14 +191,15 @@ public class LifecycleHandler {
      *
      * @since 7.1
      */
-    public static void moveToNextRandomState(DocumentModelList inDocs,
-            boolean inIgnoreDelete) {
+    public static void moveToNextRandomState(CoreSession inSession,
+            DocumentModelList inDocs, boolean inIgnoreDelete) {
 
-        TransactionInLoop til = new TransactionInLoop();
-        int count = 0;
+        TransactionInLoop til = new TransactionInLoop(inSession);
+        til.commitAndStartNewTransaction();
         for (DocumentModel oneDoc : inDocs) {
             moveToNextRandomState(oneDoc, inIgnoreDelete);
             til.commitOrRollbackIfNeeded();
         }
+        til.commitAndStartNewTransaction();
     }
 }

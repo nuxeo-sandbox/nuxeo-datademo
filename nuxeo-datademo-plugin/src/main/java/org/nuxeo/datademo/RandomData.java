@@ -123,7 +123,9 @@ public class RandomData {
         CoreSession session = ToolsMisc.getCoreSession(inDocs);
         TransactionInLoop transactionLoop = new TransactionInLoop(session,
                 commitModulo);
+        
         counter = 0;
+        transactionLoop.commitAndStartNewTransaction();
         for (DocumentModel oneDoc : inDocs) {
 
             idx = indices.get(ToolsMisc.randomInt(0, maxForRandom));
@@ -136,6 +138,7 @@ public class RandomData {
                 ToolsMisc.forceLogInfo(log, logPrefix + counter + logSuffix);
             }
         }
+        transactionLoop.commitAndStartNewTransaction();
 
     }
 
@@ -252,9 +255,11 @@ public class RandomData {
         CoreSession session = ToolsMisc.getCoreSession(inDocs);
         TransactionInLoop transactionLoop = new TransactionInLoop(session,
                 commitModulo);
+        
         counter = 0;
         int i;
         String vocValue;
+        transactionLoop.commitAndStartNewTransaction();
         for (DocumentModel oneDoc : inDocs) {
 
             for (i = 0; i < fieldsCount; i++) {
@@ -279,6 +284,7 @@ public class RandomData {
                 ToolsMisc.forceLogInfo(log, logPrefix + counter + logSuffix);
             }
         }
+        transactionLoop.commitAndStartNewTransaction();
 
     }
 

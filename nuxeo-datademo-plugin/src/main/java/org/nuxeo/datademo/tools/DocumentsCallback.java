@@ -35,7 +35,7 @@ public interface DocumentsCallback {
      * @param inDocs
      * @return
      *
-     * @since TODO
+     * @since 7.2
      */
     boolean callback(List<DocumentModel> inDocs);
 
@@ -44,10 +44,10 @@ public interface DocumentsCallback {
      * Receives one document. Return true if the caller can continue,
      * false if not
      * 
-     * @param inDocs
+     * @param inDoc
      * @return
      *
-     * @since TODO
+     * @since 7.2
      */
     boolean callback(DocumentModel inDoc);
 }

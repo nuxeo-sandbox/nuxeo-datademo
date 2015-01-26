@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.nuxeo.ecm.core.api.CoreSession;
@@ -139,14 +140,15 @@ public class ToolsMisc {
      *
      * @since 7.2
      */
-    public static void forceLogInfo(org.apache.commons.logging.Log inLog, String inWhat) {
+    public static void forceLogInfo(org.apache.commons.logging.Log inLog,
+            String inWhat) {
         if (inLog.isInfoEnabled()) {
             inLog.info(inWhat);
         } else {
             inLog.warn(inWhat);
         }
     }
-    
+
     /**
      * Handle only SimpleType and ListType fields (not ComplexTypes)
      * 
@@ -156,11 +158,11 @@ public class ToolsMisc {
      * @since TODO
      */
     public static String getCoreFieldType(Type inType) {
-        
-        if(inType.isListType()) {
+
+        if (inType.isListType()) {
             inType = ((ListType) inType).getFieldType();
         }
-        
+
         if (inType.isSimpleType()) {
             Type[] typesHier = inType.getTypeHierarchy();
             // JAN 2015, getTypeHierarchy says it never return a
@@ -173,54 +175,50 @@ public class ToolsMisc {
             }
             return inType.getName();
         }
-        
+
         return "";
     }
-    
-    public static HashMap<String, String> getComplexFieldSubFieldsInfo(Type inComplex, String inParentXPath) {
-        
-        HashMap<String, String> result = null;
-        
-        if(!inComplex.isComplexType()) {
-            return null;
-        }
-        
-        result = new HashMap<String, String>();
-        ComplexType ct = (ComplexType) inComplex;
 
-        Collection <Field> subfields = ct.getFields();
-        for(Field subF : subfields) {
-            Type subType = subF.getType();
-            String typeName = ToolsMisc.getCoreFieldType(subType);
-            String xpath = inParentXPath + "/" + subF.getName();
-            
-            result.put(xpath, typeName);
-        }
-        
-        return result;
-    }
-    
-    public static HashMap<String, String[]> getComplexFieldSubFieldsInfoPro(Type inComplex, String inParentXPath) {
-        
+    /**
+     * Given the path of a complex field, the method returns a Map in which:
+     * <ul>
+     * <li>The key is the name of the field</li>
+     * <li>The value is a String[2] array:
+     * <ul>
+     * <li>First element is the core type (can be "" if it is a complex type itself)</li>
+     * <li>second is "1" if the corresponding field is a list, "0" if it is not</li>
+     * </ul>
+     * </li>
+     * </ul>
+     * 
+     * @param inComplex
+     * @param inParentXPath
+     * @return
+     *
+     * @since 7.2
+     */
+    public static Map<String, String[]> getComplexFieldSubFieldsInfoPro(
+            Type inComplex, String inParentXPath) {
+
         HashMap<String, String[]> result = null;
-        
-        if(!inComplex.isComplexType()) {
+
+        if (!inComplex.isComplexType()) {
             return null;
         }
-        
+
         result = new HashMap<String, String[]>();
         ComplexType ct = (ComplexType) inComplex;
 
-        Collection <Field> subfields = ct.getFields();
-        for(Field subF : subfields) {
+        Collection<Field> subfields = ct.getFields();
+        for (Field subF : subfields) {
             Type subType = subF.getType();
             String typeName = ToolsMisc.getCoreFieldType(subType);
             String xpath = inParentXPath + "/" + subF.getName();
-            
-            String [] value = {typeName, subType.isListType() ? "1" : "0"};
+
+            String[] value = { typeName, subType.isListType() ? "1" : "0" };
             result.put(xpath, value);
         }
-        
+
         return result;
     }
 }
