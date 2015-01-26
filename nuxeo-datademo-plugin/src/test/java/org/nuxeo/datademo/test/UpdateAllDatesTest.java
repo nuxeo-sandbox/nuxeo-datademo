@@ -72,7 +72,7 @@ public class UpdateAllDatesTest {
 
     protected DocumentModel parentOfTestDocs;
 
-    protected DateFormat _yyyyMMdd = new SimpleDateFormat("yyyy-MM-dd");
+    protected DateFormat yyyyMMdd = new SimpleDateFormat("yyyy-MM-dd");
 
     // DocWithListDates document type, ListOfDates schema and its date_list
     // are declared in doc-type-contrib.xml and test_dates_list.xsd
@@ -544,74 +544,5 @@ public class UpdateAllDatesTest {
         }
 
         testUtils.endMethod();
-    }
-
-    @Ignore
-    @Test
-    public void quickTests() throws Exception {
-
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
-        DocumentModel doc = testUtils.createDocument(DOCTYPE_TEST_DOC,
-                "doc-complex-simple-date-" + 8989, true);
-        coreSession.save();
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
-
-        // String nxql =
-        // "SELECT * FROM Document WHERE TestSchema:the_complex/list_of_dates/0 IS NULL";
-        String nxql = "SELECT * FROM " + DOCTYPE_TEST_DOC;
-        DocumentModelList docs = coreSession.query(nxql);
-        DocumentModel zedoc = docs.get(0);
-
-        // Marche pas: "TestSchema:the_complex_multivalued/0/list_of_dates_2";
-        // Marche pas: "TestSchema:the_complex_multivalued/0/list_of_dates_2/0";
-        String zez = "TestSchema:the_complex_multivalued";
-        Object o = zedoc.getPropertyValue(zez);
-
-        if (docs == null || (docs != null && docs.size() != -2343)) {
-            return;
-        }
-        // ==============================================================
-
-        SchemaManager sm = Framework.getLocalService(SchemaManager.class);
-        Schema schema = sm.getSchema("TestSchema");
-        for (Field field : schema.getFields()) {
-            Type t = field.getType();
-
-            testUtils.doLog("Field: " + t.getName());
-            testUtils.doLog("Type: " + ToolsMisc.getCoreFieldType(t));
-            if (t.getName() != "dldkljdl") {
-                continue;
-            }
-            testUtils.doLog("DOIT PAS ETRE LA");
-
-            if (t.isSimpleType()) {
-                // testUtils.doLog("Simple type: " + t.getName());
-            } else if (t.isListType()) {
-                testUtils.doLog("List type name: " + t.getName());
-                ListType lt = (ListType) t;
-                Type tt = lt.getFieldType();
-                testUtils.doLog(tt.getName());
-                if (tt.isComplexType()) {
-                    testUtils.doLog("Complex");
-                }
-
-            } else if (t.isComplexType()) {
-                testUtils.doLog("Complex type: " + t.getName());
-                ComplexType ct = (ComplexType) t;
-                Collection<Field> subfields = ct.getFields();
-                String xpath = ct.getName();
-                for (Field subF : subfields) {
-                    testUtils.doLog("" + subF.getName());
-                    Type subType = subF.getType();
-                    testUtils.doLog(subType.getName());
-                    testUtils.doLog("getCoreFieldType: "
-                            + ToolsMisc.getCoreFieldType(subType));
-                }
-            } else {
-                testUtils.doLog("?????");
-            }
-        }
     }
 }
