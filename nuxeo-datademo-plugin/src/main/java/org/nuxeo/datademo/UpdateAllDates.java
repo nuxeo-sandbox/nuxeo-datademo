@@ -64,25 +64,27 @@ public class UpdateAllDates {
 
     public static final int DEFAULT_LOG_EVENY_N_DOCS = 500;
 
-    CoreSession session;
+    protected CoreSession session;
 
-    int diffInDays;
+    protected int diffInDays;
 
-    long updateDocCount = 0;
+    protected long updateDocCount = 0;
 
-    long totalUpdatedDocs = 0;
+    protected long totalUpdatedDocs = 0;
 
-    ArrayList<String> enabledListeners = new ArrayList<String>();
+    protected ArrayList<String> enabledListeners = new ArrayList<String>();
 
-    boolean wasBlockAsyncHandlers;
+    protected boolean wasBlockAsyncHandlers;
 
-    boolean wasBlockSyncPostCommitHandlers;
+    protected boolean wasBlockSyncPostCommitHandlers;
 
-    int docsPerTransaction = DEFAULT_DOCS_PER_TRANSACTION;
+    protected int docsPerTransaction = DEFAULT_DOCS_PER_TRANSACTION;
 
-    int docsPerPage = DEFAULT_DOCS_PER_PAGE;
+    protected int docsPerPage = DEFAULT_DOCS_PER_PAGE;
 
-    int logEveryNDocs = DEFAULT_LOG_EVENY_N_DOCS;
+    protected int logEveryNDocs = DEFAULT_LOG_EVENY_N_DOCS;
+
+    protected boolean doLog = true;
 
     public UpdateAllDates(CoreSession inSession, int inDays) {
 
@@ -158,9 +160,8 @@ public class UpdateAllDates {
             return;
         }
 
-        ToolsMisc.forceLogInfo(log,
-                "\n--------------------\nIncrease all dates by " + diffInDays
-                        + " days\n--------------------");
+        logIfCanLog("\n--------------------\nIncrease all dates by "
+                + diffInDays + " days\n--------------------");
 
         if (inDisableListeners) {
             disableListeners();
@@ -233,16 +234,16 @@ public class UpdateAllDates {
                     continue;
                 }
 
-                ToolsMisc.forceLogInfo(log,
-                        "Update dates for documents of type: " + dt.getName());
+                logIfCanLog("Update dates for documents of type: "
+                        + dt.getName());
 
                 DocumentsCallbackImpl cb = new DocumentsCallbackImpl(fieldsInfo);
                 DocumentsWalker dw = new DocumentsWalker(session, nxql,
                         docsPerPage);
                 dw.runForEachPage(cb);
 
-                ToolsMisc.forceLogInfo(log, "" + cb.getDocumentCount() + " '"
-                        + dt.getName() + "' documents updated");
+                logIfCanLog("" + cb.getDocumentCount() + " '" + dt.getName()
+                        + "' documents updated");
             }
         }
 
@@ -253,7 +254,7 @@ public class UpdateAllDates {
 
     protected void disableListeners() {
 
-        ToolsMisc.forceLogInfo(log, "Disabling all listeners...");
+        logIfCanLog("Disabling all listeners...");
 
         EventServiceImpl esi = (EventServiceImpl) Framework.getService(EventService.class);
 
@@ -274,13 +275,12 @@ public class UpdateAllDates {
 
         ell.recomputeEnabledListeners();
 
-        ToolsMisc.forceLogInfo(log,
-                "Disabled listeners: " + enabledListeners.toString());
+        logIfCanLog("Disabled listeners: " + enabledListeners.toString());
     }
 
     protected void restoreListeners() {
 
-        ToolsMisc.forceLogInfo(log, "Restoring the listeners...");
+        logIfCanLog("Restoring the listeners...");
 
         EventServiceImpl esi = (EventServiceImpl) Framework.getService(EventService.class);
         esi.setBlockAsyncHandlers(wasBlockAsyncHandlers);
@@ -299,7 +299,7 @@ public class UpdateAllDates {
 
         ell.recomputeEnabledListeners();
 
-        ToolsMisc.forceLogInfo(log, "Listeners restored.");
+        logIfCanLog("Listeners restored.");
     }
 
     /**
@@ -335,8 +335,8 @@ public class UpdateAllDates {
             updateDocCount += 1;
             totalUpdatedDocs += 1;
             if ((updateDocCount % logEveryNDocs) == 0) {
-                ToolsMisc.forceLogInfo(log, "" + updateDocCount
-                        + " (total docs: " + updateDocCount + ")");
+                logIfCanLog("" + updateDocCount + " (total docs: "
+                        + updateDocCount + ")");
             }
         }
 
@@ -369,8 +369,8 @@ public class UpdateAllDates {
      * - You then receive an ArrayList of Map<String, Serializable> where the
      * key is the name of the field (not an xpath)
      * 
-     * - Hence our calls to <code>ArrayList<Map<String, Serializable>> complexValues =
-     * (ArrayList<Map<String, Serializable>>)
+     * - Hence our calls to <code>ArrayList<Map<String, Serializable>>
+     * complexValues = (ArrayList<Map<String, Serializable>>)
      * inDoc.getPropertyValue(complexParentXPath);</code>
      */
     @SuppressWarnings("unchecked")
@@ -420,6 +420,12 @@ public class UpdateAllDates {
         }
     }
 
+    protected void logIfCanLog(String inWhat) {
+        if (doLog) {
+            ToolsMisc.forceLogInfo(log, inWhat);
+        }
+    }
+
     public void setDocsPerTransaction(int inNewValue) {
         docsPerTransaction = inNewValue > 0 ? inNewValue
                 : DEFAULT_DOCS_PER_TRANSACTION;
@@ -444,6 +450,14 @@ public class UpdateAllDates {
 
     public void setDocsPerPage(int inNewValue) {
         docsPerPage = inNewValue > 0 ? inNewValue : DEFAULT_DOCS_PER_PAGE;
+    }
+
+    public boolean getDoLog() {
+        return doLog;
+    }
+
+    public void setDoLog(boolean inValue) {
+        doLog = inValue;
     }
 
 }

@@ -25,10 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.After;
@@ -36,25 +33,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
-import org.nuxeo.datademo.LifecycleHandler;
-import org.nuxeo.datademo.RandomCompanyName;
 import org.nuxeo.datademo.RandomDates;
-import org.nuxeo.datademo.RandomDublincoreContributors;
-import org.nuxeo.datademo.RandomFirstLastNames;
-import org.nuxeo.datademo.RandomFirstLastNames.GENDER;
-import org.nuxeo.datademo.RandomVocabulary;
 import org.nuxeo.datademo.UpdateAllDates;
-import org.nuxeo.datademo.tools.DocumentsCallback;
-import org.nuxeo.datademo.tools.DocumentsWalker;
-import org.nuxeo.datademo.tools.SimpleNXQLDocumentsPageProvider;
 import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.IdRef;
-import org.nuxeo.ecm.core.api.PathRef;
-import org.nuxeo.ecm.core.api.impl.DocumentModelImpl;
 import org.nuxeo.ecm.core.api.model.Property;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.schema.types.ComplexType;
@@ -64,8 +50,6 @@ import org.nuxeo.ecm.core.schema.types.Schema;
 import org.nuxeo.ecm.core.schema.types.Type;
 import org.nuxeo.ecm.core.test.CoreFeature;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
-import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
-import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.platform.test.PlatformFeature;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
@@ -94,14 +78,17 @@ public class UpdateAllDatesTest {
     // are declared in doc-type-contrib.xml and test_dates_list.xsd
     protected static final String DOCTYPE_TEST_DOC = "TestDoc";
 
+    // Fields are declared in /schemas/TestSchema.xsd
     protected static final String XPATH_DATES_LIST = "TestSchema:list_of_dates_main";
 
-    protected static final String XPATH_COMPLEX_DATEFIELD = "TestSchema:the_complex/one_date";
+    protected static final String XPATH_COMPLEX_DATEFIELD_SIMPLE = "TestSchema:the_complex/one_date";
+
+    protected static final String XPATH_COMPLEX_DATEFIELD_LIST = "TestSchema:the_complex/list_of_dates";
 
     protected static final String XPATH_COMPLEX_MULTIVALUED = "TestSchema:the_complex_multivalued";
-    
+
     protected static final String COMPLEX_MULTIVALUED_SIMPLE_DATE_FIELD = "one_date_2";
-    
+
     protected static final String COMPLEX_MULTIVALUED_DATELIST_FIELD = "list_of_dates_2";
 
     @Inject
@@ -132,36 +119,38 @@ public class UpdateAllDatesTest {
         coreSession.save();
     }
 
+    /*
+     * In this test, we create a lot of documents, so we can also test how
+     * UpdateAllDates behaves with pagination and so on.
+     * 
+     * In other tests, we will just create a few documents. So, make sure this
+     * specific tets is not removed or @Ignore, or whatever makes it not run.
+     */
     @Test
-    public void testUpdateAlDates_SimpleField() throws Exception {
+    public void testUpdateAllDates_SimpleField() throws Exception {
 
         testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
-        int NUMBER_OF_DOCS = 1010;
-        int NUMBER_OF_DOCS_TO_CHECK = 10;
+        // + 3 to make sure we'll have ate least one not-full page in the query
+        // made by the UpdateAllDates object
+        int NUMBER_OF_DOCS = 2003;
+        int NUMBER_OF_DOCS_TO_CHECK = 100;
         int NUMBER_OF_DAYS = 4;
         long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;
 
         assertTrue(NUMBER_OF_DOCS_TO_CHECK < NUMBER_OF_DOCS);
 
-        // ==========> Create the documents <==========
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
-
+        // ==========> Create the documents
         testUtils.doLog("Creating " + NUMBER_OF_DOCS + " 'File'");
         for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
-            testUtils.createDocument("File", "doc-" + i, true);
+            testUtils.createDocument("File", "doc-date-simplefield-" + i, true);
             if ((i % 50) == 0) {
                 coreSession.save();
-                TransactionHelper.commitOrRollbackTransaction();
-                TransactionHelper.startTransaction();
             }
         }
         coreSession.save();
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
 
-        // ==========> Save values for checking <==========
+        // ==========> Store values for checking after update
         // Let's save the first NUMBER_OF_DOCS_TO_CHECK dates
         String nxql = "SELECT * FROM File";
         DocumentModelList docs = coreSession.query(nxql);
@@ -176,9 +165,10 @@ public class UpdateAllDatesTest {
 
         // ==========> Update all docs <==========
         UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
+        ual.setDoLog(false);
         ual.run(true);
 
-        // ==========> Check new dates <==========
+        // ==========> Check dates have changed
         for (String id : originalIDsAndMS.keySet()) {
             DocumentModel doc = coreSession.getDocument(new IdRef(id));
             Calendar c = (Calendar) doc.getPropertyValue("dc:created");
@@ -191,74 +181,56 @@ public class UpdateAllDatesTest {
         testUtils.endMethod();
     }
 
+    /*
+     * See comments in testUpdateAlDates_SimpleField. here, we create/check only
+     * few documents.
+     */
     @Test
-    public void testUpdateAlDates_ListOfDates() throws Exception {
+    public void testUpdateAllDates_ListOfDates() throws Exception {
 
         testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
-        int NUMBER_OF_DOCS = 1010;
-        int NUMBER_OF_DOCS_TO_CHECK = 100;
+        int NUMBER_OF_DOCS = 20;
         int NUMBER_OF_DAYS = 4;
+        int NUMBER_OF_DATES_PER_FIELD = 3;
         long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;
 
-        assertTrue(NUMBER_OF_DOCS_TO_CHECK < NUMBER_OF_DOCS);
-
-        // ==========> Create the documents <==========
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
-
-        testUtils.doLog("Creating " + NUMBER_OF_DOCS + " '" + DOCTYPE_TEST_DOC
-                + "'");
+        // ==========> Create documents. Store values for checking after update.
+        HashMap<String, Long[]> originalIDsAndMS = new HashMap<String, Long[]>();
         for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
             DocumentModel doc = testUtils.createDocument(DOCTYPE_TEST_DOC,
                     "doc-with-datesList-" + i, false);
 
-            int count = ToolsMisc.randomInt(1, 5);
-            Calendar[] dates = RandomDates.buildDates(count, null,
-                    ToolsMisc.randomInt(4, 10), 5, false);
+            Calendar[] dates = RandomDates.buildDates(
+                    NUMBER_OF_DATES_PER_FIELD, null, 4, 10, false);
             doc.setPropertyValue(XPATH_DATES_LIST, dates);
+
+            Long[] ms = new Long[NUMBER_OF_DATES_PER_FIELD];
+            for (int j = 0; j < NUMBER_OF_DATES_PER_FIELD; j++) {
+                ms[j] = dates[j].getTimeInMillis();
+            }
+            originalIDsAndMS.put(doc.getId(), ms);
 
             doc = coreSession.saveDocument(doc);
             if ((i % 50) == 0) {
                 coreSession.save();
-                TransactionHelper.commitOrRollbackTransaction();
-                TransactionHelper.startTransaction();
             }
         }
-        // We also want some null fields
+        // We also want some null fields to make sure UpdateAllDates does not
+        // fail on null values and just ignore them
         NUMBER_OF_DOCS += 6;
         for (int i = 1; i < 6; i++) {
             testUtils.createDocument(DOCTYPE_TEST_DOC, "doc-with-datesList-"
                     + i, true);
         }
         coreSession.save();
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
 
-        // ==========> Save values for checking <==========
-        // Let's save the first NUMBER_OF_DOCS_TO_CHECK dates
-        String nxql = "SELECT * FROM " + DOCTYPE_TEST_DOC;
-        DocumentModelList docs = coreSession.query(nxql);
-        assertNotNull(docs);
-        assertTrue(docs.size() > 0);
-        HashMap<String, Long[]> originalIDsAndMS = new HashMap<String, Long[]>();
-        for (int i = 0; i < NUMBER_OF_DOCS_TO_CHECK; i++) {
-            DocumentModel doc = docs.get(i);
-            Calendar[] c = (Calendar[]) doc.getPropertyValue(XPATH_DATES_LIST);
-            if (c != null && c.length > 0) {
-                Long[] ms = new Long[c.length];
-                for (int j = 0; j < c.length; j++) {
-                    ms[j] = c[j].getTimeInMillis();
-                }
-                originalIDsAndMS.put(doc.getId(), ms);
-            }
-        }
-
-        // ==========> Update all docs <==========
+        // ==========> Update all docs
         UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
+        ual.setDoLog(false);
         ual.run(true);
 
-        // ==========> Check new dates <==========
+        // ==========> Check dates have changed
         for (String id : originalIDsAndMS.keySet()) {
             DocumentModel doc = coreSession.getDocument(new IdRef(id));
             Calendar[] c = (Calendar[]) doc.getPropertyValue(XPATH_DATES_LIST);
@@ -280,65 +252,46 @@ public class UpdateAllDatesTest {
 
     }
 
+    /*
+     * See comments in testUpdateAlDates_SimpleField. here, we create/check only
+     * few documents.
+     */
     @Test
-    public void testUpdateAlDates_Complex() throws Exception {
+    public void testUpdateAllDates_SimpleFieldInComplex() throws Exception {
 
         testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
-        int NUMBER_OF_DOCS = 1010;
-        int NUMBER_OF_DOCS_TO_CHECK = 100;
+        int NUMBER_OF_DOCS = 20;
         int NUMBER_OF_DAYS = 4;
         long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;
 
-        assertTrue(NUMBER_OF_DOCS_TO_CHECK < NUMBER_OF_DOCS);
-
-        // ==========> Create the documents <==========
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
-
-        testUtils.doLog("Creating " + NUMBER_OF_DOCS + " '" + DOCTYPE_TEST_DOC
-                + "'");
+        // ==========> Create documents. Store values for checking after update.
+        HashMap<String, Long> originalIDsAndMS = new HashMap<String, Long>();
         for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
             DocumentModel doc = testUtils.createDocument(DOCTYPE_TEST_DOC,
                     "doc-complex-simple-date-" + i, false);
 
             Calendar c = RandomDates.buildDate(null, 4, 10, false);
-            doc.setPropertyValue(XPATH_COMPLEX_DATEFIELD, c);
+            doc.setPropertyValue(XPATH_COMPLEX_DATEFIELD_SIMPLE, c);
+
+            originalIDsAndMS.put(doc.getId(), c.getTimeInMillis());
 
             doc = coreSession.saveDocument(doc);
             if ((i % 50) == 0) {
                 coreSession.save();
-                TransactionHelper.commitOrRollbackTransaction();
-                TransactionHelper.startTransaction();
             }
         }
         coreSession.save();
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
 
-        // ==========> Save values for checking <==========
-        // Let's save the first NUMBER_OF_DOCS_TO_CHECK dates
-        String nxql = "SELECT * FROM " + DOCTYPE_TEST_DOC;
-        DocumentModelList docs = coreSession.query(nxql);
-        assertNotNull(docs);
-        assertTrue(docs.size() > 0);
-        HashMap<String, Long> originalIDsAndMS = new HashMap<String, Long>();
-        for (int i = 0; i < NUMBER_OF_DOCS_TO_CHECK; i++) {
-            DocumentModel doc = docs.get(i);
-            Calendar c = (Calendar) doc.getPropertyValue(XPATH_COMPLEX_DATEFIELD);
-            if (c != null) {
-                originalIDsAndMS.put(doc.getId(), c.getTimeInMillis());
-            }
-        }
-
-        // ==========> Update all docs <==========
+        // ==========> Update all docs
         UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
+        ual.setDoLog(false);
         ual.run(true);
 
-        // ==========> Check new dates <==========
+        // ==========> Check dates have changed
         for (String id : originalIDsAndMS.keySet()) {
             DocumentModel doc = coreSession.getDocument(new IdRef(id));
-            Calendar c = (Calendar) doc.getPropertyValue(XPATH_COMPLEX_DATEFIELD);
+            Calendar c = (Calendar) doc.getPropertyValue(XPATH_COMPLEX_DATEFIELD_SIMPLE);
             long ms = c.getTimeInMillis();
             long originalMS = originalIDsAndMS.get(id);
 
@@ -349,16 +302,22 @@ public class UpdateAllDatesTest {
 
     }
 
+    /*
+     * See comments in testUpdateAlDates_SimpleField. here, we create/check only
+     * few documents.
+     * 
+     * The @SuppressWarnings annotation is for the call to:
+     * 
+     * ArrayList<Map<String, Serializable>> values = (ArrayList<Map<String,
+     * Serializable>>) doc.getPropertyValue(
+     */
+    @SuppressWarnings("unchecked")
     @Test
-    public void testUpdateAlDates_ListOfComplexWithSimpleDateField() throws Exception {
+    public void testUpdateAllDates_SimpleFieldInListOfComplex()
+            throws Exception {
 
         testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
 
-        /*
-         * Other tests check UpdateAllDates can handle thousand(s) of documents.
-         * For this one, let's keep it simple, create 20, store all values in
-         * memory for check-after-update
-         */
         int NUMBER_OF_DOCS = 20;
         int NUMBER_OF_DAYS = 4;
         long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;
@@ -368,24 +327,23 @@ public class UpdateAllDatesTest {
 
         HashMap<String, Long[]> originalIDsAndMS = new HashMap<String, Long[]>();
 
-        // ==========> Create the documents, Save values for later checking
-        // <==========
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
-
-        testUtils.doLog("Creating " + NUMBER_OF_DOCS + " '" + DOCTYPE_TEST_DOC
-                + "'");
+        // ==========> Create documents. Store values for checking after update.
         for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
             DocumentModel doc = testUtils.createDocument(DOCTYPE_TEST_DOC,
-                    "doc-complex-list-" + i, false);
+                    "doc-complex-list-and-simple-date-" + i, false);
 
             // Setup the complex-multivalued property. This is done passing an
-            // Array of Map<String, Serializable>, where the key if the name of
+            // Array of Map<String, Serializable>. Each entry of the array is a
+            // hashmap where where the key if the name of
             // the field (short name, no prefix)
+            //
+            // Notice there is no need to setPropertyValue() with the list of
+            // complex, the values are saved because we are using a Property
+            // (the complexMeta variable) to which we add a value:
+            // complexMeta.addValue(oneEntry).
             Long[] ms = new Long[NUMBER_OF_COMPLEX_ENTRIES];
             for (int j = 0; j < NUMBER_OF_COMPLEX_ENTRIES; j++) {
                 Property complexMeta = doc.getProperty(XPATH_COMPLEX_MULTIVALUED);
-                ListType ltype = (ListType) complexMeta.getField().getType();
                 HashMap<String, Serializable> oneEntry = new HashMap<String, Serializable>();
                 Calendar c = RandomDates.buildDate(null, 4, 10, false);
                 ms[j] = c.getTimeInMillis();
@@ -397,24 +355,21 @@ public class UpdateAllDatesTest {
             doc = coreSession.saveDocument(doc);
             if ((i % 50) == 0) {
                 coreSession.save();
-                TransactionHelper.commitOrRollbackTransaction();
-                TransactionHelper.startTransaction();
             }
 
         }
         coreSession.save();
-        TransactionHelper.commitOrRollbackTransaction();
-        TransactionHelper.startTransaction();
 
         // DocumentModelList docs =
         // coreSession.query("SELECT * FROM Document WHERE TestSchema:the_complex_multivalued/*/one_date_2 IS NOT NULL");
         // System.out.println(docs.size());
 
-        // ==========> Update all docs <==========
+        // ==========> Update all docs
         UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
+        ual.setDoLog(false);
         ual.run(true);
 
-        // ==========> Check new dates <==========
+        // ==========> Check dates have changed
         for (String id : originalIDsAndMS.keySet()) {
             Long[] originalMS = originalIDsAndMS.get(id);
             DocumentModel doc = coreSession.getDocument(new IdRef(id));
@@ -424,11 +379,12 @@ public class UpdateAllDatesTest {
             ArrayList<Map<String, Serializable>> values = (ArrayList<Map<String, Serializable>>) doc.getPropertyValue(XPATH_COMPLEX_MULTIVALUED);
             assertNotNull(values);
             assertEquals(NUMBER_OF_COMPLEX_ENTRIES, values.size());
-            for(int i = 0; i < NUMBER_OF_COMPLEX_ENTRIES; i++) {
+            for (int i = 0; i < NUMBER_OF_COMPLEX_ENTRIES; i++) {
                 Map<String, Serializable> oneEntry = values.get(i);
                 Calendar c = (Calendar) oneEntry.get(COMPLEX_MULTIVALUED_SIMPLE_DATE_FIELD);
                 assertNotNull(c);
-                assertEquals(NUMBER_OF_MILLISECONDS, c.getTimeInMillis() - originalMS[i]);
+                assertEquals(NUMBER_OF_MILLISECONDS, c.getTimeInMillis()
+                        - originalMS[i]);
             }
         }
 
@@ -436,18 +392,159 @@ public class UpdateAllDatesTest {
 
     }
 
-    /*
-     * COMPLEX AND MULTIVALUED: TestSchema:the_complex_multivalued
-     * TestSchema:the_complex_multivalued/list_of_dates_2: date
-     * TestSchema:the_complex_multivalued/one_date_2: date
-     * 
-     * COMPLEX: TestSchema:the_complex
-     * 
-     * TestSchema:the_complex/one_date: date
-     * TestSchema:the_complex/list_of_dates: date
-     * 
-     * TestSchema:list_of_dates_main
-     */
+    @Test
+    public void testUpdateAllDates_ListOfDatesInComplex() throws Exception {
+
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
+
+        int NUMBER_OF_DOCS = 20;
+        int NUMBER_OF_DAYS = 4;
+        int NUMBER_OF_DATES_PER_FIELD = 3;
+        long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;
+
+        // ==========> Create documents. Store values for checking after update.
+        HashMap<String, Long[]> originalIDsAndMS = new HashMap<String, Long[]>();
+        for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
+            DocumentModel doc = testUtils.createDocument(DOCTYPE_TEST_DOC,
+                    "doc-complex-list-and-list-of-date-" + i, false);
+
+            Calendar[] dates = RandomDates.buildDates(
+                    NUMBER_OF_DATES_PER_FIELD, null, 4, 10, false);
+            doc.setPropertyValue(XPATH_COMPLEX_DATEFIELD_LIST, dates);
+
+            Long[] ms = new Long[NUMBER_OF_DATES_PER_FIELD];
+            for (int j = 0; j < NUMBER_OF_DATES_PER_FIELD; j++) {
+                ms[j] = dates[j].getTimeInMillis();
+            }
+            originalIDsAndMS.put(doc.getId(), ms);
+
+            doc = coreSession.saveDocument(doc);
+            if ((i % 50) == 0) {
+                coreSession.save();
+            }
+        }
+        coreSession.save();
+
+        // ==========> Update all docs
+        UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
+        ual.setDoLog(false);
+        ual.run(true);
+
+        // ==========> Check dates have changed
+        for (String id : originalIDsAndMS.keySet()) {
+            Long[] originalMS = originalIDsAndMS.get(id);
+            DocumentModel doc = coreSession.getDocument(new IdRef(id));
+
+            Calendar[] ms = (Calendar[]) doc.getPropertyValue(XPATH_COMPLEX_DATEFIELD_LIST);
+            assertEquals(NUMBER_OF_DATES_PER_FIELD, ms.length);
+            for (int i = 0; i < ms.length; i++) {
+                assertEquals(NUMBER_OF_MILLISECONDS, ms[i].getTimeInMillis()
+                        - originalMS[i]);
+            }
+        }
+
+        testUtils.endMethod();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testUpdateAllDates_ListOfDatesInListOfComplex()
+            throws Exception {
+
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
+
+        int NUMBER_OF_DOCS = 20;
+        int NUMBER_OF_DAYS = 4;
+        int NUMBER_OF_DATES_PER_FIELD = 3;
+        long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;
+
+        // No random here, we always create 3 complex
+        int NUMBER_OF_COMPLEX_ENTRIES = 3;
+
+        HashMap<String, Long[]> originalIDsAndMS = new HashMap<String, Long[]>();
+
+        // ==========> Create documents. Store values for checking after update.
+        // Because here, we have 3 dates x 3 complex fields => 9 dates/document
+        // we actually save the sum of the milliseconds for each list of dates.
+        // Jut to make it a bit simpler.
+        long EXPECTED_DIFF_IN_MS = NUMBER_OF_MILLISECONDS * NUMBER_OF_DATES_PER_FIELD;
+        for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
+            DocumentModel doc = testUtils.createDocument(DOCTYPE_TEST_DOC,
+                    "doc-complex-list-and-simple-date-" + i, false);
+
+            // Setup the complex-multivalued property. This is done passing an
+            // Array of Map<String, Serializable>. Each entry of the array is a
+            // hashmap where where the key if the name of
+            // the field (short name, no prefix)
+            //
+            // Notice there is no need to setPropertyValue() with the list of
+            // complex, the values are saved because we are using a Property
+            // (the complexMeta variable) to which we add a value:
+            // complexMeta.addValue(oneEntry).
+            Long[] ms = new Long[NUMBER_OF_COMPLEX_ENTRIES];
+            for (int j = 0; j < NUMBER_OF_COMPLEX_ENTRIES; j++) {
+                // Setup the field
+                Property complexMeta = doc.getProperty(XPATH_COMPLEX_MULTIVALUED);
+                HashMap<String, Serializable> oneEntry = new HashMap<String, Serializable>();
+                Calendar[] dates = RandomDates.buildDates(
+                        NUMBER_OF_DATES_PER_FIELD, null, 4, 10, false);
+                oneEntry.put(COMPLEX_MULTIVALUED_DATELIST_FIELD, dates);
+                complexMeta.addValue(oneEntry);
+
+                // Setup the values
+                long totalMS = 0;
+                for (Calendar oneC : dates) {
+                    totalMS += oneC.getTimeInMillis();
+                }
+                ms[j] = totalMS;
+            }
+            originalIDsAndMS.put(doc.getId(), ms);
+
+            doc = coreSession.saveDocument(doc);
+            if ((i % 50) == 0) {
+                coreSession.save();
+            }
+
+        }
+        coreSession.save();
+
+        // DocumentModelList docs =
+        // coreSession.query("SELECT * FROM Document WHERE TestSchema:the_complex_multivalued/*/one_date_2 IS NOT NULL");
+        // System.out.println(docs.size());
+
+        // ==========> Update all docs
+        UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
+        ual.setDoLog(false);
+        ual.run(true);
+
+        // ==========> Check dates have changed
+        for (String id : originalIDsAndMS.keySet()) {
+            DocumentModel doc = coreSession.getDocument(new IdRef(id));
+            Long[] originalMS = originalIDsAndMS.get(id);
+            // Get the multivalued-complex field
+            ArrayList<Map<String, Serializable>> values = (ArrayList<Map<String, Serializable>>) doc.getPropertyValue(XPATH_COMPLEX_MULTIVALUED);
+            assertNotNull(values);
+            assertEquals(NUMBER_OF_COMPLEX_ENTRIES, values.size());
+
+            for (int i = 0; i < NUMBER_OF_COMPLEX_ENTRIES; i++) {
+                Map<String, Serializable> oneEntry = values.get(i);
+                Calendar[] dates = (Calendar[]) oneEntry.get(COMPLEX_MULTIVALUED_DATELIST_FIELD);
+                assertNotNull(dates);
+                assertEquals(NUMBER_OF_DATES_PER_FIELD, dates.length);
+                
+                // Get the sum (we stored the sum)
+                long totalMS = 0;
+                for (Calendar oneC : dates) {
+                    totalMS += oneC.getTimeInMillis();
+                }
+                // Now, check. At least :->
+                assertEquals(EXPECTED_DIFF_IN_MS, totalMS - originalMS[i]);
+            }
+            
+        }
+
+        testUtils.endMethod();
+    }
 
     @Ignore
     @Test
