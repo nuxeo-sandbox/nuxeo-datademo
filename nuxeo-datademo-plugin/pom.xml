@@ -85,7 +85,7 @@
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
-	<dependency>
+    <dependency>
       <groupId>org.nuxeo.ecm.automation</groupId>
       <artifactId>nuxeo-automation-test</artifactId>
       <scope>test</scope>
