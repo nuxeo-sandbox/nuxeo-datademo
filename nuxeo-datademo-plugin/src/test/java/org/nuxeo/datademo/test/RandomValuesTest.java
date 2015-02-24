@@ -19,12 +19,9 @@ package org.nuxeo.datademo.test;
 
 import static org.junit.Assert.*;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.GregorianCalendar;
-import java.util.HashMap;
 import java.util.List;
 
 import org.junit.After;
@@ -38,31 +35,18 @@ import org.nuxeo.datademo.RandomDates;
 import org.nuxeo.datademo.RandomDublincoreContributors;
 import org.nuxeo.datademo.RandomFirstLastNames;
 import org.nuxeo.datademo.RandomFirstLastNames.GENDER;
+import org.nuxeo.datademo.RandomUSZips;
+import org.nuxeo.datademo.RandomUSZips.USZip;
 import org.nuxeo.datademo.RandomVocabulary;
 import org.nuxeo.datademo.tools.SimpleNXQLDocumentsPageProvider;
-import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.api.DocumentModelList;
-import org.nuxeo.ecm.core.api.PathRef;
-import org.nuxeo.ecm.core.api.impl.DocumentModelImpl;
-import org.nuxeo.ecm.core.schema.DocumentType;
-import org.nuxeo.ecm.core.schema.SchemaManager;
-import org.nuxeo.ecm.core.schema.types.ComplexType;
-import org.nuxeo.ecm.core.schema.types.Field;
-import org.nuxeo.ecm.core.schema.types.Schema;
-import org.nuxeo.ecm.core.schema.types.Type;
 import org.nuxeo.ecm.core.test.CoreFeature;
-import org.nuxeo.ecm.core.test.TransactionalFeature;
-import org.nuxeo.ecm.platform.query.core.CoreQueryPageProviderDescriptor;
-import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.platform.test.PlatformFeature;
-import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
-import org.nuxeo.runtime.transaction.TransactionHelper;
 
 import com.google.inject.Inject;
 
@@ -207,6 +191,27 @@ public class RandomValuesTest {
         RandomCompanyName.release();
 
         testUtils.endMethod();
+    }
+    
+    @Test
+    public void testUSZipCodes() throws Exception {
+
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
+        
+        RandomUSZips ruz = RandomUSZips.getInstance();
+        
+        USZip value = ruz.getAZip();
+        assertNotNull(value);
+        
+        value = ruz.getAZip("NY");
+        assertNotNull(value);
+        assertEquals("NY", value.state);
+        
+        value = ruz.getAZip("QWERTY");
+        assertNull(value);
+
+        testUtils.endMethod();
+        
     }
 
     protected boolean sameYMD(GregorianCalendar inD1, GregorianCalendar inD2) {
