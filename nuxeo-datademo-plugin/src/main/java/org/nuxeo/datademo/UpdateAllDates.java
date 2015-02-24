@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
@@ -93,7 +94,9 @@ public class UpdateAllDates {
 
     protected CoreSession session;
 
-    protected int diffInDays;
+    protected int diffInDays = 0;
+    
+    protected long diffInDaysInMs = 0;
 
     protected long updateDocCount = 0;
 
@@ -127,6 +130,7 @@ public class UpdateAllDates {
 
         session = inSession;
         diffInDays = inDays;
+        diffInDaysInMs = diffInDays * 24 * 3600000;
     }
 
     /**
@@ -148,6 +152,7 @@ public class UpdateAllDates {
                 - inLastUpdate.getTime();
         diffInDays = (int) TimeUnit.DAYS.convert(diffInMs,
                 TimeUnit.MILLISECONDS);
+        diffInDaysInMs = diffInDays * 24 * 3600000;
         if (diffInMs < 86400000 || diffInDays < 1) {
             diffInDays = 0;
         }
@@ -428,13 +433,13 @@ public class UpdateAllDates {
      * @param inDoc
      * @param inXPath
      *
-     * @since TODO
+     * @since 7.2
      */
     protected void updateListOfDates(DocumentModel inDoc, String inXPath) {
         Calendar[] dates = (Calendar[]) inDoc.getPropertyValue(inXPath);
         if (dates != null && dates.length > 0) {
             for (Calendar c : dates) {
-                c.add(Calendar.DATE, diffInDays);
+                updateDate(c);
             }
             inDoc.setPropertyValue(inXPath, dates);
         }
@@ -469,7 +474,7 @@ public class UpdateAllDates {
                     for (Map<String, Serializable> oneEntry : complexValues) {
                         Calendar c = (Calendar) oneEntry.get(subFieldName);
                         if (c != null) {
-                            c.add(Calendar.DATE, diffInDays);
+                            updateDate(c);
                             oneEntry.put(subFieldName, c);
                         }
                     }
@@ -478,7 +483,7 @@ public class UpdateAllDates {
             } else {
                 Calendar c = (Calendar) inDoc.getPropertyValue(inInfo.getXPath());
                 if (c != null) {
-                    c.add(Calendar.DATE, diffInDays);
+                    updateDate(c);
                     inDoc.setPropertyValue(inInfo.getXPath(), c);
                 }
             }
@@ -500,6 +505,15 @@ public class UpdateAllDates {
                 updateListOfDates(inDoc, inInfo.getXPath());
             }
         }
+    }
+
+    protected void updateDate(Calendar c) {
+
+        // This one will have potential problems with daylight saving and can
+        // ruin the unit tests. WHile we don't care about daylight saving
+        // when updating the dates.
+        // c.add(Calendar.DATE, diffInDays);
+        c.setTimeInMillis(c.getTimeInMillis() + diffInDaysInMs);
     }
 
     protected void logIfCanLog(String inWhat) {

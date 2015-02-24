@@ -24,7 +24,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,19 +34,13 @@ import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.nuxeo.datademo.RandomDates;
 import org.nuxeo.datademo.UpdateAllDates;
-import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.model.Property;
-import org.nuxeo.ecm.core.schema.SchemaManager;
-import org.nuxeo.ecm.core.schema.types.ComplexType;
-import org.nuxeo.ecm.core.schema.types.Field;
-import org.nuxeo.ecm.core.schema.types.ListType;
-import org.nuxeo.ecm.core.schema.types.Schema;
-import org.nuxeo.ecm.core.schema.types.Type;
+import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.test.CoreFeature;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
 import org.nuxeo.ecm.platform.test.PlatformFeature;
@@ -194,6 +187,9 @@ public class UpdateAllDatesTest {
         int NUMBER_OF_DAYS = 4;
         int NUMBER_OF_DATES_PER_FIELD = 3;
         long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;
+        
+        coreSession.removeChildren(parentOfTestDocs.getRef());
+        coreSession.save();
 
         // ==========> Create documents. Store values for checking after update.
         HashMap<String, Long[]> originalIDsAndMS = new HashMap<String, Long[]>();
@@ -242,7 +238,7 @@ public class UpdateAllDatesTest {
             int length = c.length;
             assertEquals(length, originalMS.length);
 
-            for (int i = 0; i < length; i++) {
+            for (int i = 0; i < length; i++) {                
                 long diff = c[i].getTimeInMillis() - originalMS[i].longValue();
                 assertEquals(NUMBER_OF_MILLISECONDS, diff);
             }

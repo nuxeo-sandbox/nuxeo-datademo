@@ -5,11 +5,11 @@
   <parent>
     <groupId>org.nuxeo.datademo</groupId>
     <artifactId>nuxeo-datademo-parent</artifactId>
-    <version>7.2-SNAPSHOT</version>
+    <version>7.1</version>
   </parent>
   <groupId>org.nuxeo.datademo</groupId>
   <artifactId>nuxeo-datademo-plugin</artifactId>
-  <version>7.2-SNAPSHOT</version>
+  <version>7.1</version>
   <name>nuxeo-datademo</name>
   <description/>
   <dependencies>
