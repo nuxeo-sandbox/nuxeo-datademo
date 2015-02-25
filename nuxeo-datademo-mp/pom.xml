@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.nuxeo.datademo</groupId>
     <artifactId>nuxeo-datademo-parent</artifactId>
-    <version>7.1</version>
+    <version>1.0</version>
   </parent>
   <artifactId>nuxeo-datademo-mp</artifactId>
   <packaging>zip</packaging>
