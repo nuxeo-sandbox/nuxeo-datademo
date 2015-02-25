@@ -19,6 +19,7 @@ package org.nuxeo.datademo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 
@@ -71,7 +72,7 @@ public class RandomFirstLastNames {
         ArrayList<String> as = new ArrayList<String>();
 
         File f = FileUtils.getResourceFileFromContext(inLocalPath);
-        try (BufferedReader reader = Files.newBufferedReader(f.toPath())) {
+        try (BufferedReader reader = Files.newBufferedReader(f.toPath(), StandardCharsets.UTF_8)) {
             String line = null;
             while ((line = reader.readLine()) != null) {
                 if (!line.isEmpty()) {
