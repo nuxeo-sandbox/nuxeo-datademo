@@ -49,6 +49,11 @@ public class RandomData {
 
     /**
      * Main constructor
+     * 
+     * Default value for <codecommitModulo</code> (if value <= 0) is
+     * <code>TransactionInLoop.COMMIT_MODUL0</code>
+     * <p>
+     * If <code>inLogStatusModulo</code> <= 0, nothing is logged.
      *
      * @param inCommitModulo
      * @param inLogStatusModulo
@@ -76,13 +81,10 @@ public class RandomData {
      * <p>
      * IMPORTANT: We are just using Math.random(), so don't expect an exact
      * repartition.
-     * <p>
-     * An info if logged every <code>inLogStatusModulo</code> if it > 0.
      *
      * @param inDocs
      * @param inXPath
      * @param inValues
-     * @param inLogStatusModulo
      *
      * @since 7.1
      */
@@ -95,14 +97,14 @@ public class RandomData {
          * array of integer, the same index is repeated to match the %, so when
          * looping thru each document, we will just get a random value in this
          * array, which will give us the string value to use.
-         *
+         * 
          * For example, with 2 values, "a"-95 and "b"-5, we build (1) a String
          * array of 2 elements, "a" and "b", and (2) an integer array of 100
          * elements where elements 0-94 are filled with 0 and 95-99 with 1.
-         *
+         * 
          * This way when asking for a random number between 0-99, we will have
          * more 0s than 1s, which is expected
-         *
+         * 
          * (Avoiding talking about "true" random, or "false" random here)
          */
         String[] fieldData = new String[inValues.size()];
@@ -123,7 +125,7 @@ public class RandomData {
         CoreSession session = ToolsMisc.getCoreSession(inDocs);
         TransactionInLoop transactionLoop = new TransactionInLoop(session,
                 commitModulo);
-        
+
         counter = 0;
         transactionLoop.commitAndStartNewTransaction();
         for (DocumentModel oneDoc : inDocs) {
@@ -255,7 +257,7 @@ public class RandomData {
         CoreSession session = ToolsMisc.getCoreSession(inDocs);
         TransactionInLoop transactionLoop = new TransactionInLoop(session,
                 commitModulo);
-        
+
         counter = 0;
         int i;
         String vocValue;

@@ -209,6 +209,8 @@ public class RandomValuesTest {
         
         value = ruz.getAZip("QWERTY");
         assertNull(value);
+        
+        RandomUSZips.release();
 
         testUtils.endMethod();
         

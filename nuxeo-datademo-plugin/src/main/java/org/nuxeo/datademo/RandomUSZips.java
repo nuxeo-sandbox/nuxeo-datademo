@@ -30,14 +30,41 @@ import org.nuxeo.common.utils.FileUtils;
 import org.nuxeo.datademo.tools.ToolsMisc;
 
 /**
- * Thread-safe class to get ZIPs code (from the US only)
+ * Thread-safe class to get ZIP codes (from the US only)
  * <p>
- * <b>WARNING</b>
+ * Usage: Check the unit tests :-). Basically:
  * <p>
- * The class is thread safe only when at creation/release time. To avoid too
- * many locks when <i>getting</i> a value (<code>getAZip()</code>), there is no
- * thread safety, because we assume you, the caller ;->, will make sure you
- * don't try to get a value <i>after</if> having released the instance.
+ * 
+ * <pre>
+ * RandomUSZips ruz = RandomUSZips.getInstance();
+ * 
+ * USZip value = ruz.getAZip();
+ * // use value.state, value.city, etc.
+ * </pre>
+ * <p>
+ * The values to read are either the default one (in the resources,
+ * files/US-zips.txt), or a file you pass to <code>getInstance()</code>. The
+ * format must be the following:
+ * <ul>
+ * <li>UTF-8</li>
+ * <li>tab-tab-return (not a csv file here)</li>
+ * <li>zipcode (tab) state code (tab) city (tab) latitude (tab) longitude
+ * <li>latitude-longitude: a dot is the decimal separator</li>
+ * </ul>
+ * <p>
+ * <p>
+ * <b>WARNINGS</b>
+ * <ul>
+ * <li><i>Memory</i>: The whole file is read and stays in memory, creating as
+ * many objects as you have "cells" in the file (plus some more for utilities)<br/>
+ * </li>
+ * 
+ * <li><i>Thread safety</i>: The class is thread safe <i>only</i> at
+ * creation/release time. To avoid too many locks when <i>getting</i> a value (
+ * <code>getAZip()</code>), there is no thread safety, because we assume you,
+ * the caller ;->, will make sure you don't try to get a value <i>after</if>
+ * having released the instance.</li>
+ * </ul>
  *
  * @since 7.1
  */
@@ -56,6 +83,8 @@ public class RandomUSZips {
     protected static ArrayList<Double> longitudes = null;
 
     protected static int maxForRandom = -1;
+
+    protected static String pathToDataFile = null;
 
     private static int usageCount = 0;
 
@@ -79,8 +108,14 @@ public class RandomUSZips {
         longitudes = new ArrayList<Double>();
 
         int count = 0;
-        File f = FileUtils.getResourceFileFromContext("files/US-zips.txt");
-        try (BufferedReader reader = Files.newBufferedReader(f.toPath(), StandardCharsets.UTF_8)) {
+        File f;
+        if (pathToDataFile == null) {
+            f = new File(pathToDataFile);
+        } else {
+            f = FileUtils.getResourceFileFromContext("files/US-zips.txt");
+        }
+        try (BufferedReader reader = Files.newBufferedReader(f.toPath(),
+                StandardCharsets.UTF_8)) {
             String line = null;
             while ((line = reader.readLine()) != null) {
                 count += 1;
@@ -128,6 +163,9 @@ public class RandomUSZips {
         maxForRandom = -1;
     }
 
+    /**
+     * Get the singleton, with the default values
+     */
     public static RandomUSZips getInstance() throws IOException {
 
         if (instance == null) {
@@ -143,9 +181,21 @@ public class RandomUSZips {
     }
 
     /**
+     * Get the singleton, with custom values
+     * <p>
+     * The file must be UTF-8 and each line is:
+     * <p>
+     * zipcode (tab) state code (tab) city (tab) latitude (tab) longitude
+     */
+    public static RandomUSZips getInstance(String inPathToDataFile)
+            throws IOException {
+        pathToDataFile = inPathToDataFile;
+        return RandomUSZips.getInstance();
+    }
+
+    /**
      * It is recommended to explicitly release the object once you don't need it
      * anymore, to avoid taking room in memory while not used at all
-     *
      *
      * @since 7.1
      */
@@ -167,6 +217,12 @@ public class RandomUSZips {
         return usageCount;
     }
 
+    /**
+     * The object returned by <code>getAZip()</code>
+     * 
+     *
+     * @since TODO
+     */
     public class USZip {
         public String zip;
 
@@ -193,23 +249,22 @@ public class RandomUSZips {
                     + longitude;
         }
     }
-    
+
     /*
-     * Utility used by other accessors
-     * We don't check the indice is valid
+     * Utility used by other accessors. We don't check the indice is valid
      */
     protected USZip getAZip(int idx) {
-        
+
         USZip zip = new USZip(zips.get(idx), states.get(idx), cities.get(idx),
                 latitudes.get(idx), longitudes.get(idx));
-        
+
         return zip;
     }
 
     /**
      * Return a USZip
      * 
-     * @return
+     * @return USZip
      *
      * @since 7.2
      */
@@ -223,8 +278,8 @@ public class RandomUSZips {
      * Return a USZip found in the requested state. Return null if the state is
      * not in the initial list.
      * 
-     * @param inElementsCount
-     * @return
+     * @param inState
+     * @return USZip
      *
      * @since 7.2
      */
