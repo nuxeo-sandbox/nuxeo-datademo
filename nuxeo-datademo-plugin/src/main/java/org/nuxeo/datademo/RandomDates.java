@@ -200,5 +200,22 @@ public class RandomDates {
 
         return dates;
     }
+    
+    public static Calendar addDays(Calendar inDate, int inDaysFrom, int inDaysTo, Calendar inMax) {
+        
+        Calendar result;
+        
+        if(inMax.before(inDate)) {
+            throw new IllegalArgumentException("Thee max. date should be greater than the start date");
+        }
+        
+        result = (Calendar) inDate.clone();
+        result.add(Calendar.DATE, ToolsMisc.randomInt(inDaysFrom, inDaysTo));
+        if(result.after(inMax)) {
+            result = (Calendar) inMax.clone();
+        }
+        
+        return result;
+    }
 
 }

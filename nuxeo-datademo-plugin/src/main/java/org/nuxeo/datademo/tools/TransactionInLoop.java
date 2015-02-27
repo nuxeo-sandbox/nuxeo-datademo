@@ -116,7 +116,7 @@ public class TransactionInLoop {
 
     /**
      * If you handle the saving of the document and are using
-     * <code>setCunter()</code> you can then also call this method to commit the
+     * <code>setCounter()</code> you can then also call this method to commit the
      * transaction.
      *
      * @since 7.2
