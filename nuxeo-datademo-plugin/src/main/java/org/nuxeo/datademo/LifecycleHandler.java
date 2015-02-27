@@ -34,8 +34,7 @@ import org.nuxeo.ecm.core.api.DocumentModelList;
  * It is a very straightforward process state1->state2->...->stateN.
  *
  * Notice: To bulk-change the state, it would be probably faster to directly
- * change the <code>misc</table> table in the database.
- *
+ * change the <code>misc</code> table in the database.
  *
  * @since 7.1
  */
@@ -135,6 +134,38 @@ public class LifecycleHandler {
             til.commitOrRollbackIfNeeded();
         }
         til.commitAndStartNewTransaction();
+    }
+
+    /**
+     * Return -1 if state1 is < state2, 1 if state1 if after state2 and 0 if
+     * they are equal.
+     * 
+     * @param inState1
+     * @param inState2
+     * @return
+     *
+     * @since TODO
+     */
+    public int compareStates(String inState1, String inState2) {
+
+        int result = 0;
+
+        Integer idx1 = stateLabelsAndIndices.get(inState1);
+        Integer idx2 = stateLabelsAndIndices.get(inState2);
+
+        if (idx1 == null || idx2 == null) {
+            throw new IllegalArgumentException("Invalid state");
+        }
+
+        if (idx1 < idx2) {
+            result = -1;
+        } else if (idx1 == idx2) {
+            result = 0;
+        } else if (idx1 > idx2) {
+            result = 1;
+        }
+
+        return result;
     }
 
     /**

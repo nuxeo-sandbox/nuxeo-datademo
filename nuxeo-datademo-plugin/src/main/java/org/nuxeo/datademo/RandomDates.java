@@ -70,7 +70,7 @@ public class RandomDates {
      */
     public static Calendar addDays(Calendar inDate, int inDays) {
 
-        return addDays(inDate, inDays, false);
+        return addDays(alignDateIfNeeded(inDate), inDays, false);
 
     }
 
@@ -94,6 +94,8 @@ public class RandomDates {
      */
     public static Calendar addDays(Calendar inDate, int inDays,
             boolean inMaxIsToday) {
+        
+        inDate = alignDateIfNeeded(inDate);
 
         if (inDays == 0) {
             return inDate;
@@ -133,16 +135,9 @@ public class RandomDates {
             int inDaysTo, boolean inRewind) {
 
         Calendar result;
-
-        if (inFrom == null) {
-            if (useStaticToday) {
-                result = (Calendar) today.clone();
-            } else {
-                result = Calendar.getInstance();
-            }
-        } else {
-            result = (Calendar) inFrom.clone();
-        }
+        
+        inFrom = alignDateIfNeeded(inFrom);
+        result = (Calendar) inFrom.clone();
         result.add(Calendar.DATE, ToolsMisc.randomInt(inDaysFrom, inDaysTo)
                 * (inRewind ? -1 : 1));
 
@@ -172,15 +167,7 @@ public class RandomDates {
 
         Calendar[] dates = new Calendar[inCount];
 
-        Calendar from = inFrom;
-        if (inFrom == null) {
-            if (useStaticToday) {
-                inFrom = (Calendar) today.clone();
-            } else {
-                inFrom = Calendar.getInstance();
-            }
-        }
-
+        Calendar from = alignDateIfNeeded(inFrom);
         for (int i = 0; i < inCount; i++) {
             dates[i] = buildDate(from, inDaysFrom, inDaysTo, inRewind);
         }
@@ -200,22 +187,76 @@ public class RandomDates {
 
         return dates;
     }
-    
-    public static Calendar addDays(Calendar inDate, int inDaysFrom, int inDaysTo, Calendar inMax) {
-        
-        Calendar result;
-        
-        if(inMax.before(inDate)) {
-            throw new IllegalArgumentException("Thee max. date should be greater than the start date");
-        }
-        
-        result = (Calendar) inDate.clone();
-        result.add(Calendar.DATE, ToolsMisc.randomInt(inDaysFrom, inDaysTo));
-        if(result.after(inMax)) {
+
+    /**
+     * Add <code>inDays</code> to <code>inDate</code> (<code>inDays</code> can
+     * be a negative value).
+     * <p>
+     * If the result is > <code>inMax</code> it is set to <code>inMax</code>.
+     * 
+     * @param inDate
+     * @param inDays
+     * @param inMax
+     * @return
+     *
+     * @since 7.2
+     */
+    public static Calendar addDays(Calendar inDate, int inDays, Calendar inMax) {
+
+        Calendar result = alignDateIfNeeded(inDate);
+        result.add(Calendar.DATE, inDays);
+
+        if (result.after(inMax)) {
             result = (Calendar) inMax.clone();
         }
         
+        return null;
+    }
+
+    /**
+     * Add inDaysFrom to inDaysTo to inDate, with a limit: If the result is >
+     * <code>inMax</code>, it is set to <code>inMax</code>.
+     * 
+     * @param inDate
+     * @param inDaysFrom
+     * @param inDaysTo
+     * @param inMax
+     * @return
+     *
+     * @since 7.2
+     */
+    public static Calendar addDays(Calendar inDate, int inDaysFrom,
+            int inDaysTo, Calendar inMax) {
+
+        Calendar result;
+        
+        inDate = alignDateIfNeeded(inDate);
+
+        if (inMax.before(inDate)) {
+            throw new IllegalArgumentException(
+                    "Thee max. date should be greater than the start date");
+        }
+
+        result = (Calendar) inDate.clone();
+        result.add(Calendar.DATE, ToolsMisc.randomInt(inDaysFrom, inDaysTo));
+        if (result.after(inMax)) {
+            result = (Calendar) inMax.clone();
+        }
+
         return result;
+    }
+    
+    private static Calendar alignDateIfNeeded(Calendar inDate) {
+        
+        if(inDate == null) {
+            if (useStaticToday) {
+                return (Calendar) today.clone();
+            } else {
+                return Calendar.getInstance();
+            }
+        } else {
+            return inDate;
+        }
     }
 
 }
