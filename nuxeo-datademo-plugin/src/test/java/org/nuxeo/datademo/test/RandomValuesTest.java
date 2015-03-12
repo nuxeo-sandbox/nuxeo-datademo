@@ -193,7 +193,6 @@ public class RandomValuesTest {
         testUtils.endMethod();
     }
     
-    @Ignore
     @Test
     public void testUSZipCodes() throws Exception {
 

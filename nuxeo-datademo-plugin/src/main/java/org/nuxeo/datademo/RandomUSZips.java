@@ -109,7 +109,7 @@ public class RandomUSZips {
 
         int count = 0;
         File f;
-        if (pathToDataFile == null) {
+        if (pathToDataFile != null) {
             f = new File(pathToDataFile);
         } else {
             f = FileUtils.getResourceFileFromContext("files/US-zips.txt");
