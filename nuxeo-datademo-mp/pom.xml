@@ -8,7 +8,7 @@
   </parent>
   <artifactId>nuxeo-datademo-mp</artifactId>
   <packaging>zip</packaging>
-  <name>Marketplace package - Data Demo Utilis</name>
+  <name>Marketplace package - Data Demo Utils</name>
 
   <dependencies>
     <dependency>
