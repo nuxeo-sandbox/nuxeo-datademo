@@ -1,0 +1,11 @@
+<component name="org.nuxeo.datademo.workers">
+
+	<extension target="org.nuxeo.ecm.core.work.service" point="queues">
+		<queue id="updateAllDates">
+			<maxThreads>1</maxThreads>
+			<category>updateAllDates</category>
+		</queue>
+	</extension>
+
+</component>
+

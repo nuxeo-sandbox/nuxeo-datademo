@@ -8,5 +8,6 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ManifestVersion: 2
 Bundle-Vendor: Nuxeo
 Nuxeo-Component: OSGI-INF/extensions/DataDemoOperations-contrib.xml,OS
- GI-INF/extensions/DataDemoPageProviders-contrib.xml
+ GI-INF/extensions/DataDemoPageProviders-contrib.xml,OSGI-INF/extensio
+ ns/Workers-Queues.xml
 

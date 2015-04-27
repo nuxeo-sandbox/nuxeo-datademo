@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
@@ -34,6 +35,7 @@ import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.nuxeo.datademo.RandomDates;
 import org.nuxeo.datademo.UpdateAllDates;
+import org.nuxeo.datademo.UpdateAllDatesWorker;
 import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -43,6 +45,8 @@ import org.nuxeo.ecm.core.api.model.Property;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.test.CoreFeature;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
+import org.nuxeo.ecm.core.work.api.WorkManager;
+import org.nuxeo.ecm.core.work.api.WorkManager.Scheduling;
 import org.nuxeo.ecm.platform.test.PlatformFeature;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Deploy;
@@ -160,6 +164,7 @@ public class UpdateAllDatesTest {
         UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
         ual.setDoLog(false);
         ual.run(true);
+        coreSession.save();
 
         // ==========> Check dates have changed
         for (String id : originalIDsAndMS.keySet()) {
@@ -537,6 +542,93 @@ public class UpdateAllDatesTest {
                 assertEquals(EXPECTED_DIFF_IN_MS, totalMS - originalMS[i]);
             }
             
+        }
+
+        testUtils.endMethod();
+    }
+    
+    @Ignore
+    public void testUpdateAllDates_SimpleField_worker() throws Exception {
+
+        testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
+
+        // + 3 to make sure we'll have ate least one not-full page in the query
+        // made by the UpdateAllDates object
+        int NUMBER_OF_DOCS = 2003;
+        int NUMBER_OF_DOCS_TO_CHECK = 100;
+        int NUMBER_OF_DAYS = 4;
+        long NUMBER_OF_MILLISECONDS = NUMBER_OF_DAYS * 24 * 3600000;
+
+        assertTrue(NUMBER_OF_DOCS_TO_CHECK < NUMBER_OF_DOCS);
+        
+        TransactionHelper.commitOrRollbackTransaction();
+        TransactionHelper.startTransaction();
+
+        // ==========> Create the documents
+        testUtils.doLog("Creating " + NUMBER_OF_DOCS + " 'File'");
+        for (int i = 1; i <= NUMBER_OF_DOCS; i++) {
+            testUtils.createDocument("File", "doc-date-simplefield-" + i, true);
+            if ((i % 50) == 0) {
+                coreSession.save();
+                TransactionHelper.commitOrRollbackTransaction();
+                TransactionHelper.startTransaction();
+            }
+        }
+        coreSession.save();
+        TransactionHelper.commitOrRollbackTransaction();
+        TransactionHelper.startTransaction();
+
+        // ==========> Store values for checking after update
+        // Let's save the first NUMBER_OF_DOCS_TO_CHECK dates
+        String nxql = "SELECT * FROM File";
+        DocumentModelList docs = coreSession.query(nxql);
+        assertNotNull(docs);
+        assertTrue(docs.size() > 0);
+        HashMap<String, Long> originalIDsAndMS = new HashMap<String, Long>();
+        for (int i = 0; i < NUMBER_OF_DOCS_TO_CHECK; i++) {
+            DocumentModel doc = docs.get(i);
+            Calendar c = (Calendar) doc.getPropertyValue("dc:created");
+            originalIDsAndMS.put(doc.getId(), c.getTimeInMillis());
+        }
+
+        // ==========> Update all docs <==========
+        testUtils.doLog("Launching the worker");
+        UpdateAllDatesWorker worker = new UpdateAllDatesWorker((int) NUMBER_OF_DAYS, true);
+        WorkManager workManager = Framework.getLocalService(WorkManager.class);
+        workManager.schedule(worker, Scheduling.IF_NOT_RUNNING_OR_SCHEDULED);
+
+        // Wait...
+        testUtils.doLog("Wait until worker done");
+        /*
+        boolean workDone = workManager.awaitCompletion(queueId, 10, TimeUnit.SECONDS);
+        if(!workDone) {
+            testUtils.doLog("Should not last that long...");
+        }
+        */
+        
+        int count = 0;
+        boolean doContinue = true;
+        do {
+            Thread.sleep(100);
+            count += 1;
+            // Wait max 10s
+            if(count > 100) {
+                testUtils.doLog("Should not last that long...");
+                doContinue = false;
+            } else {
+                doContinue = !worker.getStatus().equals(UpdateAllDatesWorker.UPDATE_ALL_DATES_DONE_STATUS);
+            }
+        } while (doContinue);
+        testUtils.doLog("Worker is done => Checking results");
+
+        // ==========> Check dates have changed
+        for (String id : originalIDsAndMS.keySet()) {
+            DocumentModel doc = coreSession.getDocument(new IdRef(id));
+            Calendar c = (Calendar) doc.getPropertyValue("dc:created");
+            long ms = c.getTimeInMillis();
+            long originalMS = originalIDsAndMS.get(id);
+
+            assertEquals(NUMBER_OF_MILLISECONDS, ms - originalMS);
         }
 
         testUtils.endMethod();

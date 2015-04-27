@@ -18,6 +18,7 @@
 package org.nuxeo.datademo.operations;
 
 import org.nuxeo.datademo.UpdateAllDates;
+import org.nuxeo.datademo.UpdateAllDatesWorker;
 import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Context;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
@@ -28,6 +29,9 @@ import org.nuxeo.ecm.automation.core.collectors.BlobCollector;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
+import org.nuxeo.ecm.core.work.api.WorkManager;
+import org.nuxeo.ecm.core.work.api.WorkManager.Scheduling;
+import org.nuxeo.runtime.api.Framework;
 
 /**
  * 
@@ -46,36 +50,19 @@ public class UpdateAllDatesOp {
     @Param(name = "disableListeners", required = false, values = { "true" })
     protected boolean disableListeners = true;
 
-    @Param(name = "newThread", required = false, values = { "true" })
-    protected boolean newThread = true;
+    @Param(name = "inWorker", required = false, values = { "true" })
+    protected boolean inWorker = true;
 
     @OperationMethod
     public void run() {
-
-        if(newThread) {
+        
+        if(inWorker) {
             
-            Runnable ualTask = new UpdateAlDatesTask(disableListeners);
-            Thread t = new Thread(ualTask, "Nuxeo_UpdateAlDatesTask");
-            t.setDaemon(false);
-            t.start();
+            UpdateAllDatesWorker worker = new UpdateAllDatesWorker((int) numberOfDays, disableListeners);
+            WorkManager workManager = Framework.getLocalService(WorkManager.class);
+            workManager.schedule(worker, Scheduling.IF_NOT_RUNNING_OR_SCHEDULED);
             
         } else {
-            UpdateAllDates ual = new UpdateAllDates(session, (int) numberOfDays);
-            ual.run(disableListeners);
-        }
-        
-    }
-
-    public class UpdateAlDatesTask implements Runnable {
-        
-        protected boolean disableListeners;
-        
-        public UpdateAlDatesTask(boolean inDisableListeners) {
-            disableListeners = inDisableListeners;
-        }
-        
-        @Override
-        public void run() {
             UpdateAllDates ual = new UpdateAllDates(session, (int) numberOfDays);
             ual.run(disableListeners);
         }

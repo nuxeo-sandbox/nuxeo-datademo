@@ -21,10 +21,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
@@ -33,7 +31,6 @@ import org.nuxeo.datademo.tools.DocumentsCallback;
 import org.nuxeo.datademo.tools.DocumentsWalker;
 import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.datademo.tools.XPathFieldInfo;
-import org.nuxeo.datademo.tools.DocumentsCallback.ReturnStatus;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
@@ -48,6 +45,7 @@ import org.nuxeo.ecm.core.schema.types.Field;
 import org.nuxeo.ecm.core.schema.types.ListType;
 import org.nuxeo.ecm.core.schema.types.Schema;
 import org.nuxeo.ecm.core.schema.types.Type;
+import org.nuxeo.ecm.core.work.AbstractWork;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
@@ -77,8 +75,11 @@ import org.nuxeo.runtime.transaction.TransactionHelper;
  * fields.</li>
  * </ul>
  * <p>
- * This means that multiple levels of Comple fields are not handled, only the
+ * This means that multiple levels of Complex fields are not handled, only the
  * first level.
+ * 
+ * Also, if this class is called from a worker (a
+ * <code>UpdateAllDatesWorker</code>), it will update the status of the worker
  *
  * @since 7.2
  */
@@ -95,7 +96,7 @@ public class UpdateAllDates {
     protected CoreSession session;
 
     protected int diffInDays = 0;
-    
+
     protected long diffInDaysInMs = 0;
 
     protected long updateDocCount = 0;
@@ -115,6 +116,8 @@ public class UpdateAllDates {
     protected int logEveryNDocs = DEFAULT_LOG_EVENY_N_DOCS;
 
     protected boolean doLog = true;
+
+    protected AbstractWork worker = null;
 
     /**
      * Constructor. Adds <code>inDays</code> to all and every <code>date</code>
@@ -180,6 +183,7 @@ public class UpdateAllDates {
         @Override
         public ReturnStatus callback(List<DocumentModel> inDocs) {
 
+            updateDocCount = 0;
             updateDocs(inDocs, fieldInfos);
 
             pageCount += 1;
@@ -315,6 +319,7 @@ public class UpdateAllDates {
 
                 logIfCanLog("Update dates for documents of type: "
                         + dt.getName());
+                setWorkerStatus("Updating dates for '" + dt.getName() + "'...");
 
                 DocumentsCallbackImpl cb = new DocumentsCallbackImpl(fieldsInfo);
                 DocumentsWalker dw = new DocumentsWalker(session, nxql,
@@ -325,6 +330,8 @@ public class UpdateAllDates {
                         + "' documents updated");
             }
         }
+
+        logIfCanLog("\n--------------------\nAll documents updated\n--------------------");
 
         if (inDisableListeners) {
             restoreListeners();
@@ -410,6 +417,7 @@ public class UpdateAllDates {
 
             count += 1;
             if ((count % docsPerTransaction) == 0) {
+                
                 TransactionHelper.commitOrRollbackTransaction();
                 TransactionHelper.startTransaction();
             }
@@ -417,8 +425,13 @@ public class UpdateAllDates {
             updateDocCount += 1;
             totalUpdatedDocs += 1;
             if ((updateDocCount % logEveryNDocs) == 0) {
-                logIfCanLog("" + updateDocCount + " (total docs: "
-                        + updateDocCount + ")");
+                String theType = "'" + oneDoc.getType() + "'";
+                logIfCanLog("" + updateDocCount + " " + theType
+                        + ", (total docs: " + totalUpdatedDocs + ")");
+
+                setWorkerStatus("Updating dates for " + theType + ": "
+                        + totalUpdatedDocs + " updated");
+
             }
         }
 
@@ -522,6 +535,14 @@ public class UpdateAllDates {
         }
     }
 
+    protected void setWorkerStatus(String inStatus) {
+
+        if (worker != null) {
+            worker.setStatus(inStatus);
+        }
+
+    }
+
     public void setDocsPerTransaction(int inNewValue) {
         docsPerTransaction = inNewValue > 0 ? inNewValue
                 : DEFAULT_DOCS_PER_TRANSACTION;
@@ -554,6 +575,11 @@ public class UpdateAllDates {
 
     public void setDoLog(boolean inValue) {
         doLog = inValue;
+    }
+
+    public void setWorker(AbstractWork inWorker) {
+
+        worker = inWorker;
     }
 
 }
