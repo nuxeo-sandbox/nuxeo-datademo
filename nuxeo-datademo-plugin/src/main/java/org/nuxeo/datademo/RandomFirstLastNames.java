@@ -19,6 +19,9 @@ package org.nuxeo.datademo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -70,14 +73,20 @@ public class RandomFirstLastNames {
     protected ArrayList<String> loadFile(String inLocalPath) throws IOException {
 
         ArrayList<String> as = new ArrayList<String>();
-
-        File f = FileUtils.getResourceFileFromContext(inLocalPath);
-        try (BufferedReader reader = Files.newBufferedReader(f.toPath(), StandardCharsets.UTF_8)) {
-            String line = null;
+                
+        InputStream in = null;
+        try {
+            in = getClass().getResourceAsStream(inLocalPath);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            String line;
             while ((line = reader.readLine()) != null) {
                 if (!line.isEmpty()) {
                     as.add(line);
                 }
+            }
+        } finally {
+            if(in != null) {
+                in.close();
             }
         }
 
@@ -85,13 +94,13 @@ public class RandomFirstLastNames {
     }
 
     private RandomFirstLastNames() throws IOException {
-        firstNamesMale = loadFile("files/FirstNames-Male.txt");
+        firstNamesMale = loadFile("/files/FirstNames-Male.txt");
         fnMaleMaxForRandom = firstNamesMale.size() - 1;
 
-        firstNamesFemale = loadFile("files/FirstNames-Female.txt");
+        firstNamesFemale = loadFile("/files/FirstNames-Female.txt");
         fnFemaleMaxForRandom = firstNamesFemale.size() - 1;
 
-        lastNames = loadFile("files/LastNames.txt");
+        lastNames = loadFile("/files/LastNames.txt");
         lnMaxForRandom = lastNames.size() - 1;
     }
 

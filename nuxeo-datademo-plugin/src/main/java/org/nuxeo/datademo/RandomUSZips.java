@@ -19,6 +19,8 @@ package org.nuxeo.datademo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -112,7 +114,9 @@ public class RandomUSZips {
         if (pathToDataFile != null) {
             f = new File(pathToDataFile);
         } else {
-            f = FileUtils.getResourceFileFromContext("files/US-zips.txt");
+            String path = getClass().getResource("/files/US-zips.txt").getFile();
+            f = new File(path);
+            
         }
         try (BufferedReader reader = Files.newBufferedReader(f.toPath(),
                 StandardCharsets.UTF_8)) {
