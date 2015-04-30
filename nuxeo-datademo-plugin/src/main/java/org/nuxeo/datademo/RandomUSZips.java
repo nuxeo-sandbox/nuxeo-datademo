@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -113,34 +114,65 @@ public class RandomUSZips {
         File f;
         if (pathToDataFile != null) {
             f = new File(pathToDataFile);
+            try (BufferedReader reader = Files.newBufferedReader(f.toPath(),
+                    StandardCharsets.UTF_8)) {
+                String line = null;
+                while ((line = reader.readLine()) != null) {
+                    count += 1;
+                    if (!line.isEmpty()) {
+                        String[] elements = line.split("\t");
+                        if (elements.length > 4) {
+                            zips.add(elements[0]);
+                            states.add(elements[1]);
+                            cities.add(elements[2]);
+                            latitudes.add(Double.valueOf(elements[3]));
+                            longitudes.add(Double.valueOf(elements[4]));
+                        } else {
+                            log.error("Line #" + count
+                                    + " does not contain at least 5 elements");
+                        }
+                    } else {
+                        log.error("Line #" + count + " is empty");
+                    }
+                }
+            }
+            
         } else {
             String path = getClass().getResource("/files/US-zips.txt").getFile();
             f = new File(path);
             
-        }
-        try (BufferedReader reader = Files.newBufferedReader(f.toPath(),
-                StandardCharsets.UTF_8)) {
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                count += 1;
-                if (!line.isEmpty()) {
-                    String[] elements = line.split("\t");
-                    if (elements.length > 4) {
-                        zips.add(elements[0]);
-                        states.add(elements[1]);
-                        cities.add(elements[2]);
-                        latitudes.add(Double.valueOf(elements[3]));
-                        longitudes.add(Double.valueOf(elements[4]));
+            InputStream in = null;
+            try {
+                in = getClass().getResourceAsStream("/files/US-zips.txt");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                String line;
+                while ((line = reader.readLine()) != null) {
+
+                    count += 1;
+                    if (!line.isEmpty()) {
+                        String[] elements = line.split("\t");
+                        if (elements.length > 4) {
+                            zips.add(elements[0]);
+                            states.add(elements[1]);
+                            cities.add(elements[2]);
+                            latitudes.add(Double.valueOf(elements[3]));
+                            longitudes.add(Double.valueOf(elements[4]));
+                        } else {
+                            log.error("Line #" + count
+                                    + " does not contain at least 5 elements");
+                        }
                     } else {
-                        log.error("Line #" + count
-                                + " does not contain at least 5 elements");
+                        log.error("Line #" + count + " is empty");
                     }
-                } else {
-                    log.error("Line #" + count + " is empty");
+                }
+            } finally {
+                if(in != null) {
+                    in.close();
                 }
             }
-            maxForRandom = zips.size() - 1;
+            
         }
+        maxForRandom = zips.size() - 1;
 
         statesAndIndices = new HashMap<String, ArrayList<Integer>>();
         for (int i = 0; i <= maxForRandom; i++) {
