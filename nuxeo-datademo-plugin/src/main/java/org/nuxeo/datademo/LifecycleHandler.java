@@ -25,8 +25,13 @@ import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.datademo.tools.TransactionInLoop;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
+import org.nuxeo.ecm.core.api.DocumentException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
+import org.nuxeo.ecm.core.api.local.LocalSession;
+import org.nuxeo.ecm.core.lifecycle.LifeCycleException;
+import org.nuxeo.ecm.core.model.Document;
+import org.nuxeo.ecm.core.model.Session;
 
 /**
  * ALlow to change lifecycle states by following transitions.
@@ -232,5 +237,38 @@ public class LifecycleHandler {
             til.commitOrRollbackIfNeeded();
         }
         til.commitAndStartNewTransaction();
+    }
+
+    /**
+     * <b>WARNING</b>
+     * <p>
+     * This code bypasses the sanity check done by misc. low-level services in
+     * nuxeo, so you could find yourself setting a state that does not exist.
+     * <p>
+     * This method makes <i>a lot</i> of assumptions: The session is a
+     * <code>LocalSession</code>, ata is stored in a SQL database, etc.
+     * <p>
+     * Basically: <i>"Use it at your own risk"</i>
+     * 
+     * @param inSession
+     * @param inDoc
+     * @param inState
+     * @throws DocumentException
+     * @throws LifeCycleException
+     *
+     * @since TODO
+     */
+    public static void directSetCurrentLifecycleState(CoreSession inSession,
+            DocumentModel inDoc, String inState) throws DocumentException,
+            LifeCycleException {
+
+        LocalSession localSession = (LocalSession) inSession;
+        Session baseSession = localSession.getSession();
+
+        Document baseDoc = baseSession.getDocumentByUUID(inDoc.getId());
+        // SQLDocument sqlDoc = (SQLDocument) baseDoc;
+        // sqlDoc.setCurrentLifeCycleState(inState);
+        baseDoc.setCurrentLifeCycleState(inState);
+
     }
 }

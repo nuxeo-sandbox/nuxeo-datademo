@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.nuxeo.datademo</groupId>
   <artifactId>nuxeo-datademo-parent</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.2-SNAPSHOT</version>
   <name>Parent Project for Nuxeo Data Demo Utils</name>
   <packaging>pom</packaging>
   <description />
@@ -18,7 +18,7 @@
     <module>nuxeo-datademo-mp</module>
   </modules>
   <properties>
-    <nuxeo.datademo.version>1.1-SNAPSHOT</nuxeo.datademo.version>
+    <nuxeo.datademo.version>1.2-SNAPSHOT</nuxeo.datademo.version>
   </properties>
   <dependencyManagement>
     <dependencies>

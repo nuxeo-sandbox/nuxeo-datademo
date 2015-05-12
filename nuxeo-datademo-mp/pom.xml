@@ -4,10 +4,10 @@
   <parent>
     <groupId>org.nuxeo.datademo</groupId>
     <artifactId>nuxeo-datademo-parent</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.2-SNAPSHOT</version>
   </parent>
   <artifactId>nuxeo-datademo-mp</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.2-SNAPSHOT</version>
   <packaging>zip</packaging>
   <name>Marketplace package - Data Demo Utils</name>
 
