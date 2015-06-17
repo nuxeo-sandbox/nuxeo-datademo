@@ -35,8 +35,7 @@ import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
  * The usage is quite simple:
  * <ul>
  * <li>Create class that implements {@link DocumentsCallback}</li>
- * <li>Create a <code>DocumentsWalker</code> with a query (and some other
- * parameters)</li>
+ * <li>Create a <code>DocumentsWalker</code> with a query</li>
  * <li>Possibly, setup more parameters</li>
  * <li>Then just call the <code>runForEachPage()</code> or
  * <code>runForEachDocument()</code> API</li>

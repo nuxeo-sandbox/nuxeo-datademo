@@ -27,7 +27,7 @@ import org.nuxeo.ecm.core.api.DocumentModel;
  * @since 7.2
  */
 public interface DocumentsCallback {
-    
+
     public enum ReturnStatus {
         STOP, CONTINUE;
     }
@@ -45,9 +45,8 @@ public interface DocumentsCallback {
      * Called after walking a list of documents, so the callback can perform
      * cleanup if needed.
      * <p>
-     * <code>inInterruptedByCallback</code> is <code>true</code> if the callback
-     * returned <code>false</code> and walking the list of documents was
-     * interrupted.
+     * <code>inLastReturnStatus</code> is stored, so later, a code can check the
+     * status.
      *
      * @since 7.2
      */
