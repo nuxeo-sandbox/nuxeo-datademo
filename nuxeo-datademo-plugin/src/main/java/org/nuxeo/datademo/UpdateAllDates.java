@@ -46,6 +46,8 @@ import org.nuxeo.ecm.core.schema.types.ListType;
 import org.nuxeo.ecm.core.schema.types.Schema;
 import org.nuxeo.ecm.core.schema.types.Type;
 import org.nuxeo.ecm.core.work.AbstractWork;
+import org.nuxeo.ecm.core.work.api.WorkManager;
+import org.nuxeo.ecm.core.work.api.WorkManager.Scheduling;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
@@ -118,6 +120,13 @@ public class UpdateAllDates {
     protected boolean doLog = true;
 
     protected AbstractWork worker = null;
+    
+    public static void runInWorker(int inDays, boolean inDisableListeners) {
+        
+        UpdateAllDatesWorker worker = new UpdateAllDatesWorker(inDays, inDisableListeners);
+        WorkManager workManager = Framework.getLocalService(WorkManager.class);
+        workManager.schedule(worker, Scheduling.IF_NOT_RUNNING_OR_SCHEDULED);
+    }
 
     /**
      * Constructor. Adds <code>inDays</code> to all and every <code>date</code>

@@ -257,7 +257,7 @@ public class RandomUSZips {
      * The object returned by <code>getAZip()</code>
      * 
      *
-     * @since TODO
+     * @since 7.2
      */
     public class USZip {
         public String zip;

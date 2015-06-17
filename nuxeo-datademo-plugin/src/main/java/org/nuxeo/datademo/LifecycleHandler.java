@@ -149,7 +149,7 @@ public class LifecycleHandler {
      * @param inState2
      * @return
      *
-     * @since TODO
+     * @since 7.2
      */
     public int compareStates(String inState1, String inState2) {
 
@@ -242,11 +242,11 @@ public class LifecycleHandler {
     /**
      * <b>WARNING</b>
      * <p>
-     * This code bypasses the sanity check done by misc. low-level services in
+     * This code bypasses the sanity check done by the low-level services in
      * nuxeo, so you could find yourself setting a state that does not exist.
      * <p>
      * This method makes <i>a lot</i> of assumptions: The session is a
-     * <code>LocalSession</code>, ata is stored in a SQL database, etc.
+     * <code>LocalSession</code>, data is stored in a SQL database, etc.
      * <p>
      * Basically: <i>"Use it at your own risk"</i>
      * 
@@ -256,7 +256,7 @@ public class LifecycleHandler {
      * @throws DocumentException
      * @throws LifeCycleException
      *
-     * @since TODO
+     * @since 7.2
      */
     public static void directSetCurrentLifecycleState(CoreSession inSession,
             DocumentModel inDoc, String inState) throws DocumentException,

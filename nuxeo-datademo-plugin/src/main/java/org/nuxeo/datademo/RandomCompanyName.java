@@ -37,8 +37,8 @@ import org.nuxeo.datademo.tools.ToolsMisc;
  * <p>
  * <b>WARNING</b>
  * <p>
- * The class is thread safe only when at creation/release time. To avoid too
- * many locks when <i>getting</i> a value (<code>getAName()</code>), there is no
+ * The class is thread safe only at creation/release time. To avoid too many
+ * locks when <i>getting</i> a value (<code>getAName()</code>), there is no
  * thread safety, because we assume you, the caller ;->, will make sure you
  * don't try to get a value <i>after</if> having released the instance.
  *
@@ -74,11 +74,12 @@ public class RandomCompanyName {
         comps3 = new ArrayList<String>();
 
         int count = 0;
-        
+
         InputStream in = null;
         try {
             in = getClass().getResourceAsStream("/files/Companies.txt");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(in));
             String line;
             while ((line = reader.readLine()) != null) {
                 count += 1;
@@ -97,7 +98,7 @@ public class RandomCompanyName {
                 }
             }
         } finally {
-            if(in != null) {
+            if (in != null) {
                 in.close();
             }
         }

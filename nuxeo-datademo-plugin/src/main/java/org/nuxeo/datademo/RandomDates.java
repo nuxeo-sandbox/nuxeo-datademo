@@ -43,11 +43,11 @@ public class RandomDates {
      * Some methods can build dates relative to "today". By default, this
      * utility class stores "today" once for all, which can be a problem if you
      * intend to use it for a long time. In this case, call this method passing
-     * it <cde>false</false>.
+     * it <code>false</code>.
      *
      * @param inValue
      *
-     * @since TODO
+     * @since 7.2
      */
     public static void setUseStaticToday(boolean inValue) {
         useStaticToday = inValue;
@@ -66,7 +66,7 @@ public class RandomDates {
      * @param inDays
      * @return
      *
-     * @since TODO
+     * @since 7.2
      */
     public static Calendar addDays(Calendar inDate, int inDays) {
 

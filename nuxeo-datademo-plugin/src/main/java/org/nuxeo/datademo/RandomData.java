@@ -103,9 +103,7 @@ public class RandomData {
          * elements where elements 0-94 are filled with 0 and 95-99 with 1.
          * 
          * This way when asking for a random number between 0-99, we will have
-         * more 0s than 1s, which is expected
-         * 
-         * (Avoiding talking about "true" random, or "false" random here)
+         * more 0s than 1s, which is expected.
          */
         String[] fieldData = new String[inValues.size()];
         int idx = 0;

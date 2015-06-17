@@ -18,20 +18,12 @@
 package org.nuxeo.datademo.operations;
 
 import org.nuxeo.datademo.UpdateAllDates;
-import org.nuxeo.datademo.UpdateAllDatesWorker;
 import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Context;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
 import org.nuxeo.ecm.automation.core.annotations.OperationMethod;
 import org.nuxeo.ecm.automation.core.annotations.Param;
-import org.nuxeo.ecm.automation.core.collectors.DocumentModelCollector;
-import org.nuxeo.ecm.automation.core.collectors.BlobCollector;
 import org.nuxeo.ecm.core.api.CoreSession;
-import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.api.DocumentRef;
-import org.nuxeo.ecm.core.work.api.WorkManager;
-import org.nuxeo.ecm.core.work.api.WorkManager.Scheduling;
-import org.nuxeo.runtime.api.Framework;
 
 /**
  * 
@@ -58,13 +50,11 @@ public class UpdateAllDatesOp {
         
         if(inWorker) {
             
-            UpdateAllDatesWorker worker = new UpdateAllDatesWorker((int) numberOfDays, disableListeners);
-            WorkManager workManager = Framework.getLocalService(WorkManager.class);
-            workManager.schedule(worker, Scheduling.IF_NOT_RUNNING_OR_SCHEDULED);
+            UpdateAllDates.runInWorker((int) numberOfDays, disableListeners);
             
         } else {
-            UpdateAllDates ual = new UpdateAllDates(session, (int) numberOfDays);
-            ual.run(disableListeners);
+            UpdateAllDates uad = new UpdateAllDates(session, (int) numberOfDays);
+            uad.run(disableListeners);
         }
         
     }
