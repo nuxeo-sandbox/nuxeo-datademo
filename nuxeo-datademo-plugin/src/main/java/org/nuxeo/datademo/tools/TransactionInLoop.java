@@ -78,6 +78,8 @@ public class TransactionInLoop {
      * <li>After: So remaining documents if any are saved to the db</li>
      * </ul>
      * <p>
+     * <b>Notice</p>: The code also save the session (calling CoreSession#save)
+     * <p>
      * <pre>
      *   TransactionInLoop til = new TransactionInLoop(session);
      *   til.commitAndStartNewTransaction();
@@ -92,6 +94,7 @@ public class TransactionInLoop {
      * @since 7.2
      */
     public void commitAndStartNewTransaction() {
+        session.save();
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
     }
@@ -125,9 +128,7 @@ public class TransactionInLoop {
      */
     public void commitOrRollbackIfNeeded() {
         if ((counter % commitModulo) == commitModulo) {
-            session.save();
-            TransactionHelper.commitOrRollbackTransaction();
-            TransactionHelper.startTransaction();
+            commitAndStartNewTransaction();
         }
     }
 
