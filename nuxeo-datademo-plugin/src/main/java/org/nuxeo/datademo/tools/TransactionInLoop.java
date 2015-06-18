@@ -107,11 +107,13 @@ public class TransactionInLoop {
      *
      * @since 7.2
      */
-    public void saveDocumentAndCommitIfNeeded(DocumentModel inDoc) {
+    public DocumentModel saveDocumentAndCommitIfNeeded(DocumentModel inDoc) {
 
-        session.saveDocument(inDoc);
+        inDoc = session.saveDocument(inDoc);
         counter += 1;
         commitOrRollbackIfNeeded();
+        
+        return inDoc;
     }
 
     /**
@@ -123,6 +125,7 @@ public class TransactionInLoop {
      */
     public void commitOrRollbackIfNeeded() {
         if ((counter % commitModulo) == commitModulo) {
+            session.save();
             TransactionHelper.commitOrRollbackTransaction();
             TransactionHelper.startTransaction();
         }
