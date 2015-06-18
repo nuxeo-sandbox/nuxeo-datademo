@@ -39,6 +39,7 @@ import org.nuxeo.runtime.transaction.TransactionHelper;
  * @since 7.1
  */
 public class TransactionInLoop {
+
     public static final int COMMIT_MODUL0 = 50;
 
     protected int counter = 0;
@@ -69,7 +70,7 @@ public class TransactionInLoop {
         session = inSession;
         setCommitModulo(inCommitModulo);
     }
-    
+
     /**
      * usually called (not mandatory) before and after looping, so:
      * <p>
@@ -78,17 +79,21 @@ public class TransactionInLoop {
      * <li>After: So remaining documents if any are saved to the db</li>
      * </ul>
      * <p>
-     * <b>Notice</p>: The code also save the session (calling CoreSession#save)
+     * <b>Notice
+     * </p>
+     * : The code also save the session (calling CoreSession#save)
      * <p>
+     * 
      * <pre>
-     *   TransactionInLoop til = new TransactionInLoop(session);
-     *   til.commitAndStartNewTransaction();
-     *   //docs is a DocumentModelList
-     *   for(DocumentModel oneDoc : docs) {
+     * TransactionInLoop til = new TransactionInLoop(session);
+     * til.commitAndStartNewTransaction();
+     * // docs is a DocumentModelList
+     * for (DocumentModel oneDoc : docs) {
      *     // . . .
      *     til.saveDocumentAndCommitIfNeeded();
-     *   }
-     *   til.commitAndStartNewTransaction();
+     * }
+     * til.commitAndStartNewTransaction();
+     * 
      * <pre>
      *
      * @since 7.2
@@ -115,19 +120,19 @@ public class TransactionInLoop {
         inDoc = session.saveDocument(inDoc);
         counter += 1;
         commitOrRollbackIfNeeded();
-        
+
         return inDoc;
     }
 
     /**
      * If you handle the saving of the document and are using
-     * <code>setCounter()</code> you can then also call this method to commit the
-     * transaction.
+     * <code>setCounter()</code> you can then also call this method to commit
+     * the transaction.
      *
      * @since 7.2
      */
     public void commitOrRollbackIfNeeded() {
-        if ((counter % commitModulo) == commitModulo) {
+        if ((counter % commitModulo) == 0) {
             commitAndStartNewTransaction();
         }
     }
@@ -154,7 +159,8 @@ public class TransactionInLoop {
 
     /**
      * Useful API if don't use <code>saveDocumentAndCommitIfNeeded</code> and
-     * handle saves. You can then later call <code>commitOrRollbackIfNeeded()</code> 
+     * handle saves. You can then later call
+     * <code>commitOrRollbackIfNeeded()</code>
      * 
      * @since 7.2
      */
@@ -164,7 +170,8 @@ public class TransactionInLoop {
 
     /**
      * Useful API if don't use <code>saveDocumentAndCommitIfNeeded</code> and
-     * handle saves. You can then later call <code>commitOrRollbackIfNeeded()</code> 
+     * handle saves. You can then later call
+     * <code>commitOrRollbackIfNeeded()</code>
      * 
      * @since 7.2
      */
