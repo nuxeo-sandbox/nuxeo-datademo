@@ -45,6 +45,8 @@ public class TransactionInLoop {
     protected int counter = 0;
 
     protected int commitModulo = COMMIT_MODUL0;
+    
+    protected int sleepDurationAfterCommit = 0;
 
     protected CoreSession session = null;
 
@@ -134,6 +136,13 @@ public class TransactionInLoop {
     public void commitOrRollbackIfNeeded() {
         if ((counter % commitModulo) == 0) {
             commitAndStartNewTransaction();
+            if(sleepDurationAfterCommit > 0) {
+                try {
+                    Thread.sleep(sleepDurationAfterCommit);
+                } catch (InterruptedException e) {
+                    // Just ignore
+                }
+            }
         }
     }
 
@@ -177,6 +186,14 @@ public class TransactionInLoop {
      */
     public void incrementCounter() {
         counter += 1;
+    }
+    
+    public int getSleepDurationAfterCommit() {
+        return sleepDurationAfterCommit;
+    }
+    
+    public void setSleepDurationAfterCommit(int inValue) {
+        sleepDurationAfterCommit = inValue;
     }
 
 }
