@@ -28,7 +28,7 @@ import org.nuxeo.ecm.core.api.CoreSession;
 /**
  * 
  */
-@Operation(id=UpdateAllDatesOp.ID, category=Constants.CAT_SERVICES, label="Update Dll Aates", description="UPdate all date fields. Default values: <code>disableListeners=true</code> and <code>newThread=true</code> ")
+@Operation(id=UpdateAllDatesOp.ID, category=Constants.CAT_SERVICES, label="Update All Dates", description="Update all date fields. Default values: <code>disableListeners=true</code> and <code>newThread=true</code> ")
 public class UpdateAllDatesOp {
 
     public static final String ID = "UpdateAllDatesOp";
