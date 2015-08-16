@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
@@ -42,7 +41,6 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.model.Property;
-import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.test.CoreFeature;
 import org.nuxeo.ecm.core.test.TransactionalFeature;
 import org.nuxeo.ecm.core.work.api.WorkManager;
@@ -166,7 +164,7 @@ public class UpdateAllDatesTest {
         // ==========> Update all docs <==========
         UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
         //ual.setDoLog(false);
-        ual.run(true);
+        ual.run();
 
         // ==========> Check dates have changed
         for (String id : originalIDsAndMS.keySet()) {
@@ -231,7 +229,7 @@ public class UpdateAllDatesTest {
         // ==========> Update all docs
         UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
         ual.setDoLog(false);
-        ual.run(true);
+        ual.run();
 
         // ==========> Check dates have changed
         for (String id : originalIDsAndMS.keySet()) {
@@ -289,7 +287,7 @@ public class UpdateAllDatesTest {
         // ==========> Update all docs
         UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
         ual.setDoLog(false);
-        ual.run(true);
+        ual.run();
 
         // ==========> Check dates have changed
         for (String id : originalIDsAndMS.keySet()) {
@@ -370,7 +368,7 @@ public class UpdateAllDatesTest {
         // ==========> Update all docs
         UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
         ual.setDoLog(false);
-        ual.run(true);
+        ual.run();
 
         // ==========> Check dates have changed
         for (String id : originalIDsAndMS.keySet()) {
@@ -431,7 +429,7 @@ public class UpdateAllDatesTest {
         // ==========> Update all docs
         UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
         ual.setDoLog(false);
-        ual.run(true);
+        ual.run();
 
         // ==========> Check dates have changed
         for (String id : originalIDsAndMS.keySet()) {
@@ -518,7 +516,7 @@ public class UpdateAllDatesTest {
         // ==========> Update all docs
         UpdateAllDates ual = new UpdateAllDates(coreSession, NUMBER_OF_DAYS);
         ual.setDoLog(false);
-        ual.run(true);
+        ual.run();
 
         // ==========> Check dates have changed
         for (String id : originalIDsAndMS.keySet()) {
@@ -595,7 +593,7 @@ public class UpdateAllDatesTest {
 
         // ==========> Update all docs <==========
         testUtils.doLog("Launching the worker");
-        UpdateAllDatesWorker worker = new UpdateAllDatesWorker((int) NUMBER_OF_DAYS, true);
+        UpdateAllDatesWorker worker = new UpdateAllDatesWorker((int) NUMBER_OF_DAYS);
         WorkManager workManager = Framework.getLocalService(WorkManager.class);
         workManager.schedule(worker, Scheduling.IF_NOT_RUNNING_OR_SCHEDULED);
 

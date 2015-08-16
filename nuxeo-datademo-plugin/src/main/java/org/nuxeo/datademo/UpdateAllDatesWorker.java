@@ -16,6 +16,7 @@
  */
 package org.nuxeo.datademo;
 
+import java.util.ArrayList;
 import java.util.Date;
 
 import org.apache.commons.logging.Log;
@@ -46,18 +47,16 @@ public class UpdateAllDatesWorker extends AbstractWork {
     
     protected Date lastUpdate = null;
     
-    protected boolean disableListeners;
+    protected ArrayList<String> disabledListeners;
     
-    public UpdateAllDatesWorker(int inDays, boolean inDisableListeners) {
+    public UpdateAllDatesWorker(int inDays) {
         
         days = inDays;
-        disableListeners = inDisableListeners;
     }
     
-    public UpdateAllDatesWorker(Date inLastUpdate, boolean inDisableListeners) {
+    public UpdateAllDatesWorker(Date inLastUpdate) {
         
         lastUpdate = inLastUpdate;
-        disableListeners = inDisableListeners;
     }
 
     @Override
@@ -80,7 +79,12 @@ public class UpdateAllDatesWorker extends AbstractWork {
                 updateDates = new UpdateAllDates(session, lastUpdate);
             }
             updateDates.setWorker(this);
-            updateDates.run(disableListeners);
+            if(disabledListeners != null) {
+                for(String name : disabledListeners) {
+                    updateDates.addListenerToDisable(name);
+                }
+            }
+            updateDates.run();
             
         } finally {
             cleanUp(true, null);
@@ -88,6 +92,10 @@ public class UpdateAllDatesWorker extends AbstractWork {
 
         setProgress(Progress.PROGRESS_100_PC);
         setStatus(UPDATE_ALL_DATES_DONE_STATUS);
+    }
+    
+    public void setListenersToDisable(ArrayList<String> inListeners) {
+        disabledListeners = inListeners;
     }
 
 }

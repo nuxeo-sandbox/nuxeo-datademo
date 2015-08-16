@@ -18,6 +18,7 @@ package org.nuxeo.datademo.tools;
 
 import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -119,6 +120,12 @@ public class ListenersDisabler {
         
         listeners = new HashMap<String, EventListenerDescriptor>();
         originalStatus = null;
+        
+    }
+    
+    public Set<String> getHandledListeners() {
+        
+        return listeners.keySet();
         
     }
 

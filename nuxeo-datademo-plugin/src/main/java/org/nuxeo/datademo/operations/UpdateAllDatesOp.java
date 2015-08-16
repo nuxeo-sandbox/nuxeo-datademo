@@ -17,6 +17,9 @@
 
 package org.nuxeo.datademo.operations;
 
+import java.util.ArrayList;
+
+import org.apache.commons.lang.StringUtils;
 import org.nuxeo.datademo.UpdateAllDates;
 import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Context;
@@ -28,7 +31,7 @@ import org.nuxeo.ecm.core.api.CoreSession;
 /**
  * 
  */
-@Operation(id=UpdateAllDatesOp.ID, category=Constants.CAT_SERVICES, label="Update All Dates", description="Update all date fields. Default values: <code>disableListeners=true</code> and <code>newThread=true</code> ")
+@Operation(id=UpdateAllDatesOp.ID, category=Constants.CAT_SERVICES, label="Update All Dates", description="Update all date fields. Default values: <code>listenersToDisable>/code> (comma separated list) is empty, and <code>newThread=true</code> ")
 public class UpdateAllDatesOp {
 
     public static final String ID = "UpdateAllDatesOp";
@@ -39,8 +42,9 @@ public class UpdateAllDatesOp {
     @Param(name = "numberOfDays", required = true)
     protected long numberOfDays;
 
-    @Param(name = "disableListeners", required = false, values = { "true" })
-    protected boolean disableListeners = true;
+    // List of comma-separated values
+    @Param(name = "listenersToDisable", required = false)
+    protected String listenersToDisable = "";
 
     @Param(name = "inWorker", required = false, values = { "true" })
     protected boolean inWorker = true;
@@ -48,13 +52,28 @@ public class UpdateAllDatesOp {
     @OperationMethod
     public void run() {
         
+        ArrayList<String> listenersNames = null;
+        
+        if(StringUtils.isNotBlank(listenersToDisable)) {
+            String[] names = listenersToDisable.trim().split(",");
+            listenersNames = new ArrayList<String>();
+            for(String oneName : names) {
+                listenersNames.add(oneName);
+            }
+        }
+        
         if(inWorker) {
             
-            UpdateAllDates.runInWorker((int) numberOfDays, disableListeners);
+            UpdateAllDates.runInWorker((int) numberOfDays, listenersNames);
             
         } else {
             UpdateAllDates uad = new UpdateAllDates(session, (int) numberOfDays);
-            uad.run(disableListeners);
+            if(listenersNames != null) {
+                for(String oneName : listenersNames) {
+                    uad.addListenerToDisable(oneName);
+                }
+            }
+            uad.run();
         }
         
     }

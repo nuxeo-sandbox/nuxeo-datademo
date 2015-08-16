@@ -25,19 +25,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.datademo.tools.DocumentsCallback;
 import org.nuxeo.datademo.tools.DocumentsWalker;
+import org.nuxeo.datademo.tools.ListenersDisabler;
 import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.datademo.tools.XPathFieldInfo;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
-import org.nuxeo.ecm.core.event.EventService;
-import org.nuxeo.ecm.core.event.impl.EventListenerDescriptor;
-import org.nuxeo.ecm.core.event.impl.EventListenerList;
-import org.nuxeo.ecm.core.event.impl.EventServiceImpl;
 import org.nuxeo.ecm.core.schema.DocumentType;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.schema.types.ComplexType;
@@ -54,10 +52,16 @@ import org.nuxeo.runtime.transaction.TransactionHelper;
 /**
  * The main <code>run()</code> method walks all Document types and each schema
  * to find date fields. It updates all and every date fields, adding some days,
- * allowing some options (disable listeners, log progress, ...).
+ * allowing some options (disable some listeners, log progress, ...).
  * <p>
  * WARNING: In this first version, caller must make sure the update is done with
  * enough rights, the code is not run in an unrestricted session.
+ * <p>
+ * ABOUT LISTENERS:
+ * <ul>
+ * <li>The code always disable the dublincore listener while updating the dates.</li>
+ * <li>If you have EventHandlers configured in Studio, check if they must be disabled, and call <code>addListenerToDisable()</code>. IMPORTANT: To disable Handlers built in Studio, use the "opchainlistener" and the "opchainpclistener" listeners (they handle all the operationChain-based listeners)</li>
+ * </ul>
  * <p>
  * The following cases are handled:
  * <ul>
@@ -105,7 +109,9 @@ public class UpdateAllDates {
 
     protected long totalUpdatedDocs = 0;
 
-    protected ArrayList<String> enabledListeners = new ArrayList<String>();
+    protected ListenersDisabler listenersDisabler = null;
+    
+    protected ArrayList<String> listenersToDisable = null;
 
     protected boolean wasBlockAsyncHandlers;
 
@@ -121,9 +127,10 @@ public class UpdateAllDates {
 
     protected AbstractWork worker = null;
     
-    public static void runInWorker(int inDays, boolean inDisableListeners) {
+    public static void runInWorker(int inDays, ArrayList<String> inListenersToDisable) {
         
-        UpdateAllDatesWorker worker = new UpdateAllDatesWorker(inDays, inDisableListeners);
+        UpdateAllDatesWorker worker = new UpdateAllDatesWorker(inDays);
+        worker.setListenersToDisable(inListenersToDisable);
         WorkManager workManager = Framework.getLocalService(WorkManager.class);
         workManager.schedule(worker, Scheduling.IF_NOT_RUNNING_OR_SCHEDULED);
     }
@@ -245,7 +252,7 @@ public class UpdateAllDates {
      *
      * @since 7.2
      */
-    public void run(boolean inDisableListeners) {
+    public void run() {
 
         if (diffInDays < 1) {
             log.error("Date received is in the future or less than one day: No update done");
@@ -255,9 +262,7 @@ public class UpdateAllDates {
         logIfCanLog("\n--------------------\nIncrease all dates by "
                 + diffInDays + " days\n--------------------");
 
-        if (inDisableListeners) {
-            disableListeners();
-        }
+        disableListeners();
 
         totalUpdatedDocs = 0;
         SchemaManager sm = Framework.getLocalService(SchemaManager.class);
@@ -342,58 +347,36 @@ public class UpdateAllDates {
 
         logIfCanLog("\n--------------------\nAll documents updated\n--------------------");
 
-        if (inDisableListeners) {
-            restoreListeners();
-        }
+        restoreListeners();
     }
 
     protected void disableListeners() {
-
-        logIfCanLog("Disabling all listeners...");
-
-        EventServiceImpl esi = (EventServiceImpl) Framework.getService(EventService.class);
-
-        wasBlockAsyncHandlers = esi.isBlockAsyncHandlers();
-        wasBlockSyncPostCommitHandlers = esi.isBlockSyncPostCommitHandlers();
-        esi.setBlockAsyncHandlers(true);
-        esi.setBlockSyncPostCommitHandlers(true);
-
-        EventListenerList ell = esi.getListenerList();
-
-        ArrayList<EventListenerDescriptor> descs = new ArrayList<EventListenerDescriptor>();
-        descs.addAll(ell.getEnabledInlineListenersDescriptors());
-
-        for (EventListenerDescriptor d : descs) {
-            enabledListeners.add(d.getName());
-            d.setEnabled(false);
+        
+        if(listenersDisabler == null) {
+            listenersDisabler = new ListenersDisabler();
+            listenersDisabler.addListener(ListenersDisabler.DUBLINCORELISTENER_NAME);
+        }
+        if(listenersToDisable != null) {
+            for(String name : listenersToDisable) {
+                listenersDisabler.addListener(name);
+            }
         }
 
-        ell.recomputeEnabledListeners();
-
-        logIfCanLog("Disabled listeners: " + enabledListeners.toString());
+        logIfCanLog("Disabling listeners...");
+        listenersDisabler.disableListeners();
+        logIfCanLog("Disabled listeners: " + listenersDisabler.getHandledListeners().toString());
     }
 
     protected void restoreListeners() {
 
         logIfCanLog("Restoring the listeners...");
 
-        EventServiceImpl esi = (EventServiceImpl) Framework.getService(EventService.class);
-        esi.setBlockAsyncHandlers(wasBlockAsyncHandlers);
-        esi.setBlockSyncPostCommitHandlers(wasBlockSyncPostCommitHandlers);
-
-        EventListenerList ell = esi.getListenerList();
-
-        ArrayList<EventListenerDescriptor> descs = new ArrayList<EventListenerDescriptor>();
-        descs.addAll(ell.getInlineListenersDescriptors());
-
-        for (EventListenerDescriptor d : descs) {
-            if (enabledListeners.contains(d.getName())) {
-                d.setEnabled(true);
-            }
+        if(listenersDisabler != null) {
+            listenersDisabler.restoreListeners();
+            listenersDisabler.reset();
+            listenersDisabler = null;
         }
-
-        ell.recomputeEnabledListeners();
-
+ 
         logIfCanLog("Listeners restored.");
     }
 
@@ -589,6 +572,21 @@ public class UpdateAllDates {
     public void setWorker(AbstractWork inWorker) {
 
         worker = inWorker;
+    }
+    
+    public void addListenerToDisable(String inName) {
+        
+        if(StringUtils.isBlank(inName)) {
+            return;
+        }
+        
+        if(listenersToDisable == null) {
+            listenersToDisable = new ArrayList<String>();
+        }
+        if(!listenersToDisable.contains(inName)) {
+            listenersToDisable.add(inName);
+        }
+        
     }
 
 }
