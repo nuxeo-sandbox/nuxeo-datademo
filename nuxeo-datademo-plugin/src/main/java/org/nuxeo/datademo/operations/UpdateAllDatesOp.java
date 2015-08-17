@@ -58,7 +58,7 @@ public class UpdateAllDatesOp {
             String[] names = listenersToDisable.trim().split(",");
             listenersNames = new ArrayList<String>();
             for(String oneName : names) {
-                listenersNames.add(oneName);
+                listenersNames.add(oneName.trim());
             }
         }
         

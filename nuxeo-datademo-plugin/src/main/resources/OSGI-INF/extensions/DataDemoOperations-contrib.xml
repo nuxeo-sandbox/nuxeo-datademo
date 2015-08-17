@@ -2,7 +2,6 @@
 
   <extension target="org.nuxeo.ecm.core.operation.OperationServiceComponent"
     point="operations" >
-      <operation class="org.nuxeo.datademo.operations.UpdateWithRandomDatesAndUsersOp" />
       <operation class="org.nuxeo.datademo.operations.UpdateAllDatesOp" />
    </extension>
     
