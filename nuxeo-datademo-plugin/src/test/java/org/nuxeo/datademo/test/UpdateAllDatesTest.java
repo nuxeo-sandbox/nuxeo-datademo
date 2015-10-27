@@ -121,7 +121,7 @@ public class UpdateAllDatesTest {
      * In other tests, we will just create a few documents. So, make sure this
      * specific tests is not removed or @Ignore, or whatever makes it not run.
      */
-    @Ignore
+    @Test
     public void testUpdateAllDates_SimpleField() throws Exception {
 
         testUtils.startMethod(testUtils.getCurrentMethodName(new RuntimeException()));
@@ -312,6 +312,7 @@ public class UpdateAllDatesTest {
      * ArrayList<Map<String, Serializable>> values = (ArrayList<Map<String,
      * Serializable>>) doc.getPropertyValue(
      */
+    @Ignore
     @SuppressWarnings("unchecked")
     @Test
     public void testUpdateAllDates_SimpleFieldInListOfComplex()
