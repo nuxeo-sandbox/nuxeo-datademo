@@ -57,7 +57,7 @@ import com.google.inject.Inject;
 @RunWith(FeaturesRunner.class)
 // Using transactions in this test.
 @Features({ PlatformFeature.class, TransactionalFeature.class,
-        CoreFeature.class, EmbeddedAutomationServerFeature.class })
+        CoreFeature.class })
 // We deploy org.nuxeo.datademo.test which contains the DocTypes, list dates,
 // etc. we need
 @Deploy({ "nuxeo-datademo", "org.nuxeo.datademo.test" })
