@@ -121,6 +121,7 @@ public class UpdateAllDatesTest {
      * In other tests, we will just create a few documents. So, make sure this
      * specific tests is not removed or @Ignore, or whatever makes it not run.
      */
+    @Ignore
     @Test
     public void testUpdateAllDates_SimpleField() throws Exception {
 
@@ -183,6 +184,7 @@ public class UpdateAllDatesTest {
      * See comments in testUpdateAlDates_SimpleField. here, we create/check only
      * few documents.
      */
+    @Ignore
     @Test
     public void testUpdateAllDates_ListOfDates() throws Exception {
 
@@ -257,6 +259,7 @@ public class UpdateAllDatesTest {
      * See comments in testUpdateAlDates_SimpleField. here, we create/check only
      * few documents.
      */
+    @Ignore
     @Test
     public void testUpdateAllDates_SimpleFieldInComplex() throws Exception {
 
@@ -394,6 +397,7 @@ public class UpdateAllDatesTest {
 
     }
 
+    @Ignore
     @Test
     public void testUpdateAllDates_ListOfDatesInComplex() throws Exception {
 
@@ -448,6 +452,7 @@ public class UpdateAllDatesTest {
         testUtils.endMethod();
     }
 
+    @Ignore
     @SuppressWarnings("unchecked")
     @Test
     public void testUpdateAllDates_ListOfDatesInListOfComplex()

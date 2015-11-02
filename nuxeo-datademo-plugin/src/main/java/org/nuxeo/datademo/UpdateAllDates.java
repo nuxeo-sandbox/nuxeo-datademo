@@ -50,17 +50,18 @@ import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 /**
- * The main <code>run()</code> method walks all Document types and each schema
- * to find date fields. It updates all and every date fields, adding some days,
- * allowing some options (disable some listeners, log progress, ...).
+ * The main <code>run()</code> method walks all Document types and each schema to find date fields. It updates all and
+ * every date fields, adding some days, allowing some options (disable some listeners, log progress, ...).
  * <p>
- * WARNING: In this first version, caller must make sure the update is done with
- * enough rights, the code is not run in an unrestricted session.
+ * WARNING: In this first version, caller must make sure the update is done with enough rights, the code is not run in
+ * an unrestricted session.
  * <p>
  * ABOUT LISTENERS:
  * <ul>
  * <li>The code always disable the dublincore listener while updating the dates.</li>
- * <li>If you have EventHandlers configured in Studio, check if they must be disabled, and call <code>addListenerToDisable()</code>. IMPORTANT: To disable Handlers built in Studio, use the "opchainlistener" and the "opchainpclistener" listeners (they handle all the operationChain-based listeners)</li>
+ * <li>If you have EventHandlers configured in Studio, check if they must be disabled, and call
+ * <code>addListenerToDisable()</code>. IMPORTANT: To disable Handlers built in Studio, use the "opchainlistener" and
+ * the "opchainpclistener" listeners (they handle all the operationChain-based listeners)</li>
  * </ul>
  * <p>
  * The following cases are handled:
@@ -70,22 +71,16 @@ import org.nuxeo.runtime.transaction.TransactionHelper;
  * <li>In a <i>complex</li> field:
  * <ul>
  * <li>Simple date field (<code>myschema:the_complex/sub_date</code>)</li>
- * <li>Multivalued (list) date field (
- * <code>myschema:the_complex/sub_list_of_dates</code>)</li>
+ * <li>Multivalued (list) date field ( <code>myschema:the_complex/sub_list_of_dates</code>)</li>
  * <li>In a <i>multivalued (list) complex</li> field:
  * <ul>
  * <li>Simple date field (<code>myschema:the_complex_list/n/one_date</code>)</li>
- * <li>Multivalued (list) date field (
- * <code>myschema:the_complex_list/n/a_list_of_dates</code>)</li>
- * <li>Where <code>n</code> is the index of an entry in the list of complex
- * fields.</li>
+ * <li>Multivalued (list) date field ( <code>myschema:the_complex_list/n/a_list_of_dates</code>)</li>
+ * <li>Where <code>n</code> is the index of an entry in the list of complex fields.</li>
  * </ul>
  * <p>
- * This means that multiple levels of Complex fields are not handled, only the
- * first level.
- * 
- * Also, if this class is called from a worker (a
- * <code>UpdateAllDatesWorker</code>), it will update the status of the worker
+ * This means that multiple levels of Complex fields are not handled, only the first level. Also, if this class is
+ * called from a worker (a <code>UpdateAllDatesWorker</code>), it will update the status of the worker
  *
  * @since 7.2
  */
@@ -110,7 +105,7 @@ public class UpdateAllDates {
     protected long totalUpdatedDocs = 0;
 
     protected ListenersDisabler listenersDisabler = null;
-    
+
     protected ArrayList<String> listenersToDisable = null;
 
     protected boolean wasBlockAsyncHandlers;
@@ -126,9 +121,9 @@ public class UpdateAllDates {
     protected boolean doLog = true;
 
     protected AbstractWork worker = null;
-    
+
     public static void runInWorker(int inDays, ArrayList<String> inListenersToDisable) {
-        
+
         UpdateAllDatesWorker worker = new UpdateAllDatesWorker(inDays);
         worker.setListenersToDisable(inListenersToDisable);
         WorkManager workManager = Framework.getLocalService(WorkManager.class);
@@ -136,11 +131,10 @@ public class UpdateAllDates {
     }
 
     /**
-     * Constructor. Adds <code>inDays</code> to all and every <code>date</code>
-     * field.
+     * Constructor. Adds <code>inDays</code> to all and every <code>date</code> field.
      * <p>
-     * WARNING: In this first version, caller must make sure the update is done
-     * with enough rights, the code is not run in an unrestricted session.
+     * WARNING: In this first version, caller must make sure the update is done with enough rights, the code is not run
+     * in an unrestricted session.
      * 
      * @param inSession
      * @param inDays
@@ -153,35 +147,36 @@ public class UpdateAllDates {
     }
 
     /**
-     * Constructor. Calculates the difference between <code>inLastUpdate</code>
-     * and now, and adds the corresponding days to all and every
-     * <code>date</code> field.
+     * Constructor. Calculates the difference between <code>inLastUpdate</code> and now, and adds the corresponding days
+     * to all and every <code>date</code> field.
      * <p>
-     * WARNING: In this first version, caller must make sure the update is done
-     * with enough rights, the code is not run in an unrestricted session.
+     * WARNING: In this first version, caller must make sure the update is done with enough rights, the code is not run
+     * in an unrestricted session.
      * 
      * @param inSession
      * @param inLastUpdate
      */
     public UpdateAllDates(CoreSession inSession, Date inLastUpdate) {
 
-        session = inSession;
+        log.error("<UpdateAllDates> is Worj In Progress. Should not be used yet.");
+        return;
 
-        long diffInMs = Calendar.getInstance().getTimeInMillis()
-                - inLastUpdate.getTime();
-        diffInDays = (int) TimeUnit.DAYS.convert(diffInMs,
-                TimeUnit.MILLISECONDS);
-        diffInDaysInMs = diffInDays * 24 * 3600000;
-        if (diffInMs < 86400000 || diffInDays < 1) {
-            diffInDays = 0;
-        }
+        // session = inSession;
+        //
+        // long diffInMs = Calendar.getInstance().getTimeInMillis()
+        // - inLastUpdate.getTime();
+        // diffInDays = (int) TimeUnit.DAYS.convert(diffInMs,
+        // TimeUnit.MILLISECONDS);
+        // diffInDaysInMs = diffInDays * 24 * 3600000;
+        // if (diffInMs < 86400000 || diffInDays < 1) {
+        // diffInDays = 0;
+        // }
     }
 
     /**
-     * This is the callback for the DocumentsWalker. We perform the update in
-     * this callback without having to care about the query, the pagination, ...
+     * This is the callback for the DocumentsWalker. We perform the update in this callback without having to care about
+     * the query, the pagination, ...
      * 
-     *
      * @since 7.2
      */
     protected class DocumentsCallbackImpl implements DocumentsCallback {
@@ -237,19 +232,16 @@ public class UpdateAllDates {
     }
 
     /**
-     * Main entry point. Check all document types and their schemas, then update
-     * all dates.
+     * Main entry point. Check all document types and their schemas, then update all dates.
      * <p>
-     * If <code>inDisableListeners</code> is <code>true</code>, all and every
-     * listeners are disabled during the update, and re-enabled after the update
-     * (actually, only the listeners that were enabled are re-enabled. If a
-     * lister was disabled, it stays disabled)
+     * If <code>inDisableListeners</code> is <code>true</code>, all and every listeners are disabled during the update,
+     * and re-enabled after the update (actually, only the listeners that were enabled are re-enabled. If a lister was
+     * disabled, it stays disabled)
      * <p>
-     * WARNING: In this first version, caller must make sure the update is done
-     * with enough rights, the code is not run in an unrestricted session.
+     * WARNING: In this first version, caller must make sure the update is done with enough rights, the code is not run
+     * in an unrestricted session.
      * 
      * @param inDisableListeners
-     *
      * @since 7.2
      */
     public void run() {
@@ -259,8 +251,7 @@ public class UpdateAllDates {
             return;
         }
 
-        logIfCanLog("\n--------------------\nIncrease all dates by "
-                + diffInDays + " days\n--------------------");
+        logIfCanLog("\n--------------------\nIncrease all dates by " + diffInDays + " days\n--------------------");
 
         disableListeners();
 
@@ -284,8 +275,7 @@ public class UpdateAllDates {
                         // If it does not return "date", we will check complex
                         // types in the else clauses
                         if (typeName.equals("date")) {
-                            fieldsInfo.add(new XPathFieldInfo(""
-                                    + field.getName(), t.isListType(), "date"));
+                            fieldsInfo.add(new XPathFieldInfo("" + field.getName(), t.isListType(), "date"));
                         } else if (t.isListType()) {
 
                             // Check if complex-multivalued
@@ -298,9 +288,8 @@ public class UpdateAllDates {
                                 for (String oneXPath : subFieldsXPathsAndTypes.keySet()) {
                                     String[] subInfos = subFieldsXPathsAndTypes.get(oneXPath);
                                     if (subInfos[0].equals("date")) {
-                                        XPathFieldInfo xpfi = new XPathFieldInfo(
-                                                oneXPath,
-                                                subInfos[1].equals("1"), "date");
+                                        XPathFieldInfo xpfi = new XPathFieldInfo(oneXPath, subInfos[1].equals("1"),
+                                                "date");
                                         xpfi.setComplexListParentXPath(parentXPath);
                                         fieldsInfo.add(xpfi);
                                     }
@@ -309,13 +298,12 @@ public class UpdateAllDates {
                         }
                     } else if (t.isComplexType()) {
                         ComplexType ct = (ComplexType) t;
-                        Map<String, String[]> subFieldsXPathsAndTypes = ToolsMisc.getComplexFieldSubFieldsInfoPro(
-                                ct, field.getName().getPrefixedName());
+                        Map<String, String[]> subFieldsXPathsAndTypes = ToolsMisc.getComplexFieldSubFieldsInfoPro(ct,
+                                field.getName().getPrefixedName());
                         for (String oneXPath : subFieldsXPathsAndTypes.keySet()) {
                             String[] subInfos = subFieldsXPathsAndTypes.get(oneXPath);
                             if (subInfos[0].equals("date")) {
-                                fieldsInfo.add(new XPathFieldInfo(oneXPath,
-                                        subInfos[1].equals("1"), "date"));
+                                fieldsInfo.add(new XPathFieldInfo(oneXPath, subInfos[1].equals("1"), "date"));
                             }
                         }
                     }
@@ -331,17 +319,14 @@ public class UpdateAllDates {
                     continue;
                 }
 
-                logIfCanLog("Update dates for documents of type: "
-                        + dt.getName());
+                logIfCanLog("Update dates for documents of type: " + dt.getName());
                 setWorkerStatus("Updating dates for '" + dt.getName() + "'...");
 
                 DocumentsCallbackImpl cb = new DocumentsCallbackImpl(fieldsInfo);
-                DocumentsWalker dw = new DocumentsWalker(session, nxql,
-                        docsPerPage);
+                DocumentsWalker dw = new DocumentsWalker(session, nxql, docsPerPage);
                 dw.runForEachPage(cb);
 
-                logIfCanLog("" + cb.getDocumentCount() + " '" + dt.getName()
-                        + "' documents updated");
+                logIfCanLog("" + cb.getDocumentCount() + " '" + dt.getName() + "' documents updated");
             }
         }
 
@@ -351,13 +336,13 @@ public class UpdateAllDates {
     }
 
     protected void disableListeners() {
-        
-        if(listenersDisabler == null) {
+
+        if (listenersDisabler == null) {
             listenersDisabler = new ListenersDisabler();
             listenersDisabler.addListener(ListenersDisabler.DUBLINCORELISTENER_NAME);
         }
-        if(listenersToDisable != null) {
-            for(String name : listenersToDisable) {
+        if (listenersToDisable != null) {
+            for (String name : listenersToDisable) {
                 listenersDisabler.addListener(name);
             }
         }
@@ -371,30 +356,27 @@ public class UpdateAllDates {
 
         logIfCanLog("Restoring the listeners...");
 
-        if(listenersDisabler != null) {
+        if (listenersDisabler != null) {
             listenersDisabler.restoreListeners();
             listenersDisabler.reset();
             listenersDisabler = null;
         }
- 
+
         logIfCanLog("Listeners restored.");
     }
 
     /**
-     * Update all date fields whose xpaths are encapsulated in
-     * <code>inFieldsInfo</code>, handling all cases: simple field, list fields,
-     * simple field in a complex, list field in a complex, simple field in a
-     * list of complex, list field in a list of complex.
+     * Update all date fields whose xpaths are encapsulated in <code>inFieldsInfo</code>, handling all cases: simple
+     * field, list fields, simple field in a complex, list field in a complex, simple field in a list of complex, list
+     * field in a list of complex.
      * <p>
      * No control/check if the document has the correct schema.
      * 
      * @param inDocs
      * @param inFieldsInfo
-     *
      * @since 7.2
      */
-    protected void updateDocs(List<DocumentModel> inDocs,
-            ArrayList<XPathFieldInfo> inFieldsInfo) {
+    protected void updateDocs(List<DocumentModel> inDocs, ArrayList<XPathFieldInfo> inFieldsInfo) {
 
         TransactionHelper.commitOrRollbackTransaction();
         TransactionHelper.startTransaction();
@@ -409,7 +391,7 @@ public class UpdateAllDates {
 
             count += 1;
             if ((count % docsPerTransaction) == 0) {
-                
+
                 TransactionHelper.commitOrRollbackTransaction();
                 TransactionHelper.startTransaction();
             }
@@ -418,11 +400,9 @@ public class UpdateAllDates {
             totalUpdatedDocs += 1;
             if ((updateDocCount % logEveryNDocs) == 0) {
                 String theType = "'" + oneDoc.getType() + "'";
-                logIfCanLog("" + updateDocCount + " " + theType
-                        + ", (total docs: " + totalUpdatedDocs + ")");
+                logIfCanLog("" + updateDocCount + " " + theType + ", (total docs: " + totalUpdatedDocs + ")");
 
-                setWorkerStatus("Updating dates for " + theType + ": "
-                        + totalUpdatedDocs + " updated");
+                setWorkerStatus("Updating dates for " + theType + ": " + totalUpdatedDocs + " updated");
 
             }
         }
@@ -437,7 +417,6 @@ public class UpdateAllDates {
      * 
      * @param inDoc
      * @param inXPath
-     *
      * @since 7.2
      */
     protected void updateListOfDates(DocumentModel inDoc, String inXPath) {
@@ -451,19 +430,11 @@ public class UpdateAllDates {
     }
 
     /*
-     * We know we handle only dates. No need to check inInfo.getCoreTypeName()
-     * 
-     * Some explanation (auto-remember things too actually ;-)) about
-     * multivalued-complex fields:
-     * 
-     * - To get all values, call getPropertyValue(xpath of the complex field)
-     * 
-     * - You then receive an ArrayList of Map<String, Serializable> where the
-     * key is the name of the field (not an xpath)
-     * 
-     * - Hence our calls to <code>ArrayList<Map<String, Serializable>>
-     * complexValues = (ArrayList<Map<String, Serializable>>)
-     * inDoc.getPropertyValue(complexParentXPath);</code>
+     * We know we handle only dates. No need to check inInfo.getCoreTypeName() Some explanation (auto-remember things
+     * too actually ;-)) about multivalued-complex fields: - To get all values, call getPropertyValue(xpath of the
+     * complex field) - You then receive an ArrayList of Map<String, Serializable> where the key is the name of the
+     * field (not an xpath) - Hence our calls to <code>ArrayList<Map<String, Serializable>> complexValues =
+     * (ArrayList<Map<String, Serializable>>) inDoc.getPropertyValue(complexParentXPath);</code>
      */
     @SuppressWarnings("unchecked")
     protected void updateDate(DocumentModel inDoc, XPathFieldInfo inInfo) {
@@ -501,8 +472,7 @@ public class UpdateAllDates {
                 if (complexValues != null) {
                     int length = complexValues.size();
                     for (int i = 0; i < length; i++) {
-                        String finalXPath = complexParentXPath + "/" + i + "/"
-                                + subFieldName;
+                        String finalXPath = complexParentXPath + "/" + i + "/" + subFieldName;
                         updateListOfDates(inDoc, finalXPath);
                     }
                 }
@@ -536,8 +506,7 @@ public class UpdateAllDates {
     }
 
     public void setDocsPerTransaction(int inNewValue) {
-        docsPerTransaction = inNewValue > 0 ? inNewValue
-                : DEFAULT_DOCS_PER_TRANSACTION;
+        docsPerTransaction = inNewValue > 0 ? inNewValue : DEFAULT_DOCS_PER_TRANSACTION;
     }
 
     public int getDocsPerTransaction() {
@@ -573,20 +542,20 @@ public class UpdateAllDates {
 
         worker = inWorker;
     }
-    
+
     public void addListenerToDisable(String inName) {
-        
-        if(StringUtils.isBlank(inName)) {
+
+        if (StringUtils.isBlank(inName)) {
             return;
         }
-        
-        if(listenersToDisable == null) {
+
+        if (listenersToDisable == null) {
             listenersToDisable = new ArrayList<String>();
         }
-        if(!listenersToDisable.contains(inName)) {
+        if (!listenersToDisable.contains(inName)) {
             listenersToDisable.add(inName);
         }
-        
+
     }
 
 }
