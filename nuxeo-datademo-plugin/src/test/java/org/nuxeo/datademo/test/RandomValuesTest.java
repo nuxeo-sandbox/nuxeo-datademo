@@ -39,7 +39,6 @@ import org.nuxeo.datademo.RandomUSZips;
 import org.nuxeo.datademo.RandomUSZips.USZip;
 import org.nuxeo.datademo.RandomVocabulary;
 import org.nuxeo.datademo.tools.SimpleNXQLDocumentsPageProvider;
-import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.test.CoreFeature;

@@ -23,13 +23,12 @@ import java.util.HashMap;
 
 import org.nuxeo.datademo.tools.ToolsMisc;
 import org.nuxeo.datademo.tools.TransactionInLoop;
-import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
-import org.nuxeo.ecm.core.api.DocumentException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
+import org.nuxeo.ecm.core.api.DocumentNotFoundException;
+import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.local.LocalSession;
-import org.nuxeo.ecm.core.lifecycle.LifeCycleException;
 import org.nuxeo.ecm.core.model.Document;
 import org.nuxeo.ecm.core.model.Session;
 
@@ -56,13 +55,13 @@ public class LifecycleHandler {
     protected int transitionsCount;
 
     public LifecycleHandler(String[] inStates, String[] inTransitions)
-            throws ClientException {
+            throws NuxeoException {
 
         statesCount = inStates.length;
         transitionsCount = inTransitions.length;
 
         if (transitionsCount < (statesCount - 1)) {
-            throw new ClientException("Not enough transitions.");
+            throw new NuxeoException("Not enough transitions.");
         }
 
         int idx = 0;
@@ -259,8 +258,7 @@ public class LifecycleHandler {
      * @since 7.2
      */
     public static void directSetCurrentLifecycleState(CoreSession inSession,
-            DocumentModel inDoc, String inState) throws DocumentException,
-            LifeCycleException {
+            DocumentModel inDoc, String inState) throws DocumentNotFoundException {
 
         LocalSession localSession = (LocalSession) inSession;
         Session baseSession = localSession.getSession();

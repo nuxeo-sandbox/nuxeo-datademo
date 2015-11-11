@@ -35,7 +35,6 @@ import org.junit.runner.RunWith;
 import org.nuxeo.datademo.RandomDates;
 import org.nuxeo.datademo.UpdateAllDates;
 import org.nuxeo.datademo.UpdateAllDatesWorker;
-import org.nuxeo.ecm.automation.test.EmbeddedAutomationServerFeature;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;

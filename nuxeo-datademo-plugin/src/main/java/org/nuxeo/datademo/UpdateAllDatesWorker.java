@@ -68,6 +68,8 @@ public class UpdateAllDatesWorker extends AbstractWork {
     @Override
     public void work() {
         
+        log.info("Starting the <Updating all dates> work.");
+        
         setStatus("Updating all dates");
         setProgress(Progress.PROGRESS_INDETERMINATE);
         
