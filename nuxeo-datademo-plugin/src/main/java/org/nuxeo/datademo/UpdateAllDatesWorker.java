@@ -24,7 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.work.AbstractWork;
 
 /**
- * 
+ *
  *
  * @since 7.3
  */
@@ -38,41 +38,41 @@ public class UpdateAllDatesWorker extends AbstractWork {
     public static final String CATEGORY_UPDATE_ALL_DATES = "updateAllDates";
 
     public static final String UPDATE_ALL_DATES_DONE_EVENT = "updateAllDatesDone";
-    
+
     public static final String UPDATE_ALL_DATES_DONE_STATUS = "Updating all dates: Done";
-    
+
     protected UpdateAllDates updateDates;
-    
+
     protected int days = -1;
-    
+
     protected Date lastUpdate = null;
-    
+
     protected ArrayList<String> disabledListeners;
-    
+
     public UpdateAllDatesWorker(int inDays) {
-        
+
         days = inDays;
     }
-    
+
     public UpdateAllDatesWorker(Date inLastUpdate) {
-        
+
         lastUpdate = inLastUpdate;
     }
 
     @Override
     public String getTitle() {
-        
+
         return "Data Demo: Update All Dates";
     }
 
     @Override
     public void work() {
-        
+
         log.info("Starting the <Updating all dates> work.");
-        
+
         setStatus("Updating all dates");
         setProgress(Progress.PROGRESS_INDETERMINATE);
-        
+
         try {
             initSession();
             if(lastUpdate == null) {
@@ -87,7 +87,7 @@ public class UpdateAllDatesWorker extends AbstractWork {
                 }
             }
             updateDates.run();
-            
+
         } finally {
             cleanUp(true, null);
         }
@@ -95,7 +95,7 @@ public class UpdateAllDatesWorker extends AbstractWork {
         setProgress(Progress.PROGRESS_100_PC);
         setStatus(UPDATE_ALL_DATES_DONE_STATUS);
     }
-    
+
     public void setListenersToDisable(ArrayList<String> inListeners) {
         disabledListeners = inListeners;
     }
