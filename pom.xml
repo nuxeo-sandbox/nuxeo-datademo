@@ -5,11 +5,11 @@
   <parent>
     <groupId>org.nuxeo</groupId>
     <artifactId>nuxeo-addons-parent</artifactId>
-    <version>8.3</version>
+    <version>8.10</version>
   </parent>
   <groupId>org.nuxeo.datademo</groupId>
   <artifactId>nuxeo-datademo-parent</artifactId>
-    <version>1.2.2-SNAPSHOT</version>
+    <version>8.10-SNAPSHOT</version>
   <name>Parent Project for Nuxeo Data Demo Utils</name>
   <packaging>pom</packaging>
   <description />
@@ -18,7 +18,8 @@
     <module>nuxeo-datademo-mp</module>
   </modules>
   <properties>
-    <nuxeo.datademo.version>1.2.2-SNAPSHOT</nuxeo.datademo.version>
+    <nuxeo.distribution.version>8.10</nuxeo.distribution.version>
+    <nuxeo.datademo.version>8.10-SNAPSHOT</nuxeo.datademo.version>
   </properties>
   <dependencyManagement>
     <dependencies>
